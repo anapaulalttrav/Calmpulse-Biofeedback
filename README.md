@@ -17,6 +17,17 @@
 
 ---
 
+## 👥 Equipe de Desenvolvimento
+
+| 👤 Integrante | 🎓 Registro Acadêmico (RA) |
+| :--- | :--- |
+| **Ana Paula Lopes Travassos** | `2026108913` |
+| **Rhuan Ryuji Yui Isozaki** | `2026105656` |
+| **Marcelo Martins Araujo Junior** | `2026108269` |
+| **Luiz Gustavo da Silveira** | `2026103979` |
+
+---
+
 ## 📖 Sobre o Projeto
 
 O **CalmPulse** é um dispositivo de **biofeedback de baixíssimo custo** desenvolvido para monitoramento e intervenção breve em quadros de **ansiedade aguda e estresse**. O sistema utiliza sensores fisiológicos para detectar picos de estresse e aciona automaticamente um protocolo de **respiração guiada (técnica 4-7-8)** com feedback visual (LEDs) e tátil (vibração).
@@ -33,7 +44,7 @@ O projeto é **open-source**, está alinhado ao **ODS 3 — Saúde e Bem-Estar**
 
 A relação entre ansiedade e elevação da frequência cardíaca é amplamente documentada na literatura científica. Durante uma crise de ansiedade ou pânico, o **Sistema Nervoso Simpático** é ativado, resultando em taquicardia, sudorese e hiperventilação.
 
-> *"A taquicardia é um dos sintomas fisiológicos mais prevalentes durante crises de ansiedade e pânico, sendo um marcador objetivo da ativação do eixo simpático-adrenal."*
+> *"A taquicardia é um dos sintomas fisiológicos mais prevalentes durante crises de ansiedade e pânico, sendo um marcador objetivo da ativação do eixo simpático-adrenal."*  
 > — **American Psychological Association (APA), 2022**
 
 **Referências científicas:**
@@ -45,7 +56,7 @@ A relação entre ansiedade e elevação da frequência cardíaca é amplamente 
 
 O biofeedback é reconhecido pela **Associação Americana de Psicologia (APA)** como uma intervenção baseada em evidências para ansiedade. A técnica de respiração **4-7-8** (inspirar 4s, segurar 7s, expirar 8s) ativa o **Sistema Nervoso Parassimpático**, reduzindo a frequência cardíaca e promovendo regulação emocional.
 
-> *"Intervenções de biofeedback respiratório demonstraram eficácia significativa na redução de sintomas de ansiedade e na regulação da variabilidade da frequência cardíaca (HRV)."*
+> *"Intervenções de biofeedback respiratório demonstraram eficácia significativa na redução de sintomas de ansiedade e na regulação da variabilidade da frequência cardíaca (HRV)."*  
 > — **Lehrer, P. M. et al. (2020)** — *Heart Rate Variability Biofeedback: How and Why Does It Work?*
 
 **Referências científicas:**
@@ -70,4 +81,3 @@ O CalmPulse foi arquitetado seguindo um modelo de **Sistemas Embarcados de Tempo
     ▼
 🟢 BioCapture Array (Sensores) ──► 🟡 CorePulse Logic (MCU) ──► 🔵 CalmSync Actuators (Atuadores)
     (MAX30100)               (Arduino UNO)         (LEDs + Vibração + OLED)
-
