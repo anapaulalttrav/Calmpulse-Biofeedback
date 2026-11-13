@@ -25,6 +25,7 @@
 | **Rhuan Ryuji Yui Isozaki** | `2026105656` |
 | **Marcelo Martins Araujo Junior** | `2026108269` |
 | **Luiz Gustavo da Silveira** | `2026103979` |
+| **Samuel Nunes Moreira** | `2026106182` |
 
 ---
 
