@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEF3F2">
+<meta name="description" content="CalmPulse: painel do protótipo de biofeedback de baixo custo. Projeto de extensão FMU, ODS 3.">
+<title>CalmPulse: Painel de Biofeedback (FMU)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   1. TOKENS
+   ========================================================= */
+:root{
+  --bg:#EEF3F2; --surface:#FFFFFF; --surface-2:#E5EDEC; --ink:#0F2A2B; --muted:#4D6566; --line:#D1DCDB;
+  --primary:#1F6F6A; --primary-soft:#DCEEEB; --on-primary:#FFFFFF;
+  --inhale:#2F7FD0; --hold:#7B5CC8; --exhale:#1E9A6C; --calm:#1E9A6C; --warn:#B87406; --stress:#D3443A;
+  --device:#1A2A2C; --device-edge:#2C4245;
+  --focus:#2F63E0; --shadow:0 1px 2px rgba(15,42,43,.05),0 8px 22px rgba(15,42,43,.07);
+  --header-bg:rgba(238,243,242,.9);
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-cond:"IBM Plex Sans Condensed","IBM Plex Sans","Arial Narrow",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1B1D; --surface:#142527; --surface-2:#1B3033; --ink:#E3EFED; --muted:#93AAA8; --line:#264040;
+    --primary:#5CC6BC; --primary-soft:#163937; --on-primary:#052020;
+    --inhale:#6AB2F5; --hold:#A88CF0; --exhale:#4FD3A0; --calm:#4FD3A0; --warn:#F0B44C; --stress:#FF7A6E;
+    --device:#081214; --device-edge:#1F3437;
+    --focus:#8FB0FF; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.32);
+    --header-bg:rgba(14,27,29,.88); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1B1D; --surface:#142527; --surface-2:#1B3033; --ink:#E3EFED; --muted:#93AAA8; --line:#264040;
+  --primary:#5CC6BC; --primary-soft:#163937; --on-primary:#052020;
+  --inhale:#6AB2F5; --hold:#A88CF0; --exhale:#4FD3A0; --calm:#4FD3A0; --warn:#F0B44C; --stress:#FF7A6E;
+  --device:#081214; --device-edge:#1F3437;
+  --focus:#8FB0FF; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.32);
+  --header-bg:rgba(14,27,29,.88); color-scheme:dark;
+}
+
+/* =========================================================
+   2. BASE
+   ========================================================= */
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--header-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:8px}
+h1,h2,h3{margin:0;line-height:1.15;font-weight:600;letter-spacing:-.01em}
+.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.muted{color:var(--muted)}
+code,pre,.mono{font-family:var(--font-mono)}
+
+/* =========================================================
+   3. CABEÇALHO E NAVEGAÇÃO
+   ========================================================= */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--header-bg);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar-inner{max-width:1200px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;margin-right:auto}
+.brand-mark{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:var(--on-primary)}
+.brand b{display:block;font-size:1.15rem;font-weight:700;letter-spacing:-.02em;line-height:1}
+.brand small{display:block;color:var(--muted);font-size:.74rem;margin-top:3px}
+.nav{display:flex;gap:2px}
+.nav a{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:10px;text-decoration:none;color:var(--muted);font-weight:500;font-size:.93rem}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--primary-soft);color:var(--primary);font-weight:600}
+.theme-btn{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px 7px 9px;cursor:pointer;font-size:.86rem}
+@media (max-width:900px){
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(5,1fr)}
+  .nav a{flex-direction:column;gap:2px;font-size:.72rem;padding:7px 2px;text-align:center}
+  .theme-btn span,.brand small{display:none}
+  .theme-btn{padding:8px}
+}
+main{max-width:1200px;margin:0 auto;padding:18px 18px calc(110px + env(safe-area-inset-bottom,0px))}
+@media (min-width:901px){main{padding-bottom:40px}}
+
+/* =========================================================
+   4. COMPONENTES
+   ========================================================= */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.page-head h1{font-size:1.8rem}
+.page-head p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}
+.card h2{font-size:1.08rem;margin-bottom:12px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.card-head h2{margin:0}
+.stack{display:grid;gap:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--line);background:var(--surface);border-radius:11px;padding:9px 14px;cursor:pointer;font-weight:500;font-size:.93rem;text-decoration:none;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.btn-primary:hover{border-color:var(--primary);filter:brightness(1.08)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn-danger{color:var(--stress)}
+.btn-sm{padding:6px 10px;font-size:.85rem}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:500;color:var(--muted);font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.field label,.field .lbl{display:block;font-weight:500;font-size:.9rem;margin-bottom:5px}
+.field small{display:block;color:var(--muted);font-size:.82rem;margin-top:4px}
+.field select,.field input[type=text],.field input[type=number],.field textarea{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 11px}
+.range{display:flex;align-items:center;gap:10px}
+.range input{flex:1;accent-color:var(--primary)}
+.range output{min-width:44px;text-align:right;font-weight:600}
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.93rem}
+.toggle input{width:18px;height:18px;accent-color:var(--primary)}
+.notice{display:flex;gap:10px;align-items:flex-start;background:var(--surface-2);border-radius:12px;padding:11px 13px;font-size:.88rem;color:var(--muted)}
+.notice .icon{width:18px;height:18px;color:var(--primary);margin-top:2px}
+.notice.warn{background:color-mix(in srgb,var(--warn) 14%,var(--surface));color:var(--ink)}
+.notice.warn .icon{color:var(--warn)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap}
+th{color:var(--muted);font-weight:500;font-size:.82rem}
+td.num,th.num{text-align:right}
+.toast-zone{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:60;display:grid;gap:8px;width:min(92vw,440px)}
+.toast{background:var(--ink);color:var(--bg);padding:11px 15px;border-radius:12px;font-size:.92rem;box-shadow:var(--shadow)}
+
+/* =========================================================
+   5. MONITOR: GÊMEO DIGITAL DO DISPOSITIVO
+   ========================================================= */
+.status-strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.states{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.states span{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:.84rem;font-weight:500}
+.states span.on{background:var(--ink);color:var(--bg)}
+.states span.on.lim{background:var(--warn);color:#fff}
+.states span.on.int{background:var(--inhale);color:#fff}
+.states i{font-style:normal;color:var(--line)}
+.conn{display:inline-flex;align-items:center;gap:7px;font-size:.86rem;color:var(--muted)}
+.conn b{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.conn.ok b{background:var(--calm);box-shadow:0 0 0 4px color-mix(in srgb,var(--calm) 25%,transparent)}
+.mon{display:grid;gap:16px}
+@media (min-width:980px){.mon{grid-template-columns:400px 1fr;align-items:start}}
+.device{background:var(--device);border:1px solid var(--device-edge);border-radius:34px;padding:26px 22px 22px;color:#DDE8E7;display:flex;flex-direction:column;align-items:center;gap:18px;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),var(--shadow)}
+.device-label{position:absolute;top:12px;left:20px;font-size:.72rem;letter-spacing:.06em;color:#7E9997}
+.vib{position:absolute;top:12px;right:18px;display:flex;align-items:center;gap:6px;font-size:.72rem;color:#7E9997}
+.vib i{width:10px;height:10px;border-radius:50%;background:#2B3E40;transition:background .1s}
+.vib.on i{background:#F0B44C;box-shadow:0 0 10px #F0B44C}
+.vib.on{animation:tremer .08s linear infinite}
+@keyframes tremer{0%{transform:translateX(0)}50%{transform:translateX(1px)}100%{transform:translateX(-1px)}}
+.ringbox{position:relative;width:min(300px,74vw);aspect-ratio:1;display:grid;place-items:center}
+.led{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px;border-radius:50%;background:#1E2C2E;border:1px solid #2F4446}
+.orb{width:66%;aspect-ratio:1;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.35),transparent 45%),var(--orb,#1E9A6C);transform:scale(.8);color:#fff;
+  box-shadow:0 0 60px -10px var(--orb,#1E9A6C)}
+.orb b{font-family:var(--font-cond);font-weight:700;font-size:3.4rem;line-height:1}
+.orb span{font-size:.92rem;opacity:.92}
+.orb.beat{animation:beat .25s ease-out}
+@keyframes beat{0%{filter:brightness(1.35)}100%{filter:brightness(1)}}
+.oled-box{background:#000;border-radius:8px;padding:8px;border:2px solid #2C3F41}
+.oled{width:256px;height:128px;image-rendering:pixelated;display:block;max-width:64vw;height:auto;aspect-ratio:2}
+.device-btns{display:flex;gap:8px}
+.device-btns button{border:1px solid #33494B;background:#122224;color:#DDE8E7;border-radius:999px;padding:7px 14px;cursor:pointer;font-size:.85rem}
+.device-btns button:hover{border-color:#5E7B7D}
+.readouts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media (min-width:640px){.readouts{grid-template-columns:repeat(4,1fr)}}
+.ro{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.ro small{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.82rem}
+.ro b{display:block;font-family:var(--font-cond);font-size:2.3rem;font-weight:600;line-height:1.1;letter-spacing:-.01em}
+.ro b em{font-style:normal;font-size:.95rem;font-family:var(--font);color:var(--muted);font-weight:400;margin-left:3px}
+.ro .delta{font-size:.8rem;color:var(--muted)}
+.heart{color:var(--stress)}
+.heart.beat{animation:hb .25s ease-out}
+@keyframes hb{0%{transform:scale(1.35)}100%{transform:scale(1)}}
+.gauge{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--calm),var(--warn) 55%,var(--stress));position:relative;margin-top:8px}
+.gauge i{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+.gauge u{position:absolute;top:-6px;width:2px;height:20px;background:var(--ink);opacity:.35}
+.chart{width:100%;height:150px;display:block}
+.chart.tall{height:190px}
+.log{list-style:none;margin:0;padding:0;font-size:.88rem;display:grid;gap:4px;max-height:200px;overflow:auto}
+.log li{display:flex;gap:10px}
+.log time{color:var(--muted);min-width:64px}
+.controls{display:grid;gap:14px}
+@media (min-width:700px){.controls{grid-template-columns:1fr 1fr}}
+.formula{font-family:var(--font-mono);font-size:.85rem;background:var(--surface-2);border-radius:10px;padding:12px;overflow-x:auto;white-space:pre;line-height:1.6}
+@media (prefers-reduced-motion:reduce){.vib.on,.orb.beat,.heart.beat{animation:none}}
+
+/* =========================================================
+   6. RESPIRAR, PILOTO, ANÁLISE, FIRMWARE
+   ========================================================= */
+.breathe{display:grid;gap:16px}
+@media (min-width:900px){.breathe{grid-template-columns:1fr 340px;align-items:start}}
+.breathe-stage{background:var(--device);border-radius:28px;padding:30px 18px;display:flex;flex-direction:column;align-items:center;gap:18px;color:#DDE8E7;min-height:460px;justify-content:center}
+.breathe-stage .ringbox{width:min(380px,80vw)}
+.phase-bar{display:flex;gap:6px;width:min(380px,80vw)}
+.phase-bar div{flex:var(--d);height:8px;border-radius:4px;background:#24393B;overflow:hidden}
+.phase-bar div i{display:block;height:100%;width:0}
+.prot-list{display:grid;gap:8px}
+.prot{display:flex;gap:12px;align-items:flex-start;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:12px;cursor:pointer}
+.prot[aria-pressed="true"]{border-color:var(--primary);background:var(--primary-soft)}
+.prot b{display:block}
+.prot span{color:var(--muted);font-size:.86rem}
+.steps-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.steps-nav span{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:.83rem}
+.steps-nav span.on{background:var(--primary);color:var(--on-primary)}
+.steps-nav span.done{background:var(--primary-soft);color:var(--primary)}
+.pilot{display:grid;gap:16px}
+@media (min-width:980px){.pilot{grid-template-columns:1.2fr 1fr;align-items:start}}
+.timer{font-family:var(--font-cond);font-size:4rem;font-weight:600;line-height:1}
+.eva{display:grid;gap:8px}
+.eva input{width:100%;accent-color:var(--primary)}
+.eva-scale{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+.eva-val{font-family:var(--font-cond);font-size:3rem;font-weight:600;line-height:1}
+.checks{display:grid;gap:8px}
+.checks label{display:flex;gap:10px;align-items:flex-start;font-size:.93rem;cursor:pointer}
+.checks input{width:18px;height:18px;margin-top:3px;accent-color:var(--primary);flex:none}
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.cmp{border:1px solid var(--line);border-radius:14px;padding:12px}
+.cmp small{color:var(--muted);font-size:.82rem}
+.cmp div{display:flex;align-items:baseline;gap:8px;font-family:var(--font-cond);font-size:1.5rem;font-weight:600}
+.cmp .d{font-size:.95rem}
+.good{color:var(--calm)} .bad{color:var(--stress)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.stat small{display:block;color:var(--muted);font-size:.82rem}
+.stat b{display:block;font-family:var(--font-cond);font-size:1.9rem;font-weight:600;line-height:1.15}
+.an-grid{display:grid;gap:14px}
+@media (min-width:900px){.an-grid{grid-template-columns:1fr 1fr}}
+.slope{width:100%;height:240px;display:block}
+pre.code{background:var(--device);color:#D7E5E3;border-radius:14px;padding:16px;overflow:auto;max-height:560px;font-size:.8rem;line-height:1.55;margin:0}
+.wire td:first-child{font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#monitor" aria-label="CalmPulse, monitor">
+      <span class="brand-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h4l2-5 4 10 3-7 2 2h5"/></svg></span>
+      <span><b>CalmPulse</b><small>Extensão FMU | ODS 3</small></span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Seções"></nav>
+    <button class="theme-btn" id="themeBtn" type="button"></button>
+  </div>
+</header>
+<main id="app" tabindex="-1"></main>
+<div class="toast-zone" id="toasts" role="status" aria-live="polite"></div>
+
+<script type="text/plain" id="fwSrc">/*
+ * CalmPulse — firmware de referência
+ * Projeto de extensão FMU (BCC, manhã) — ODS 3: Saúde e Bem-Estar
+ *
+ * Hardware: Arduino Nano (ou ESP32), MAX30102 (I2C), GSR por divisor de tensão (A1),
+ * anel NeoPixel de 16 LEDs (D6), motor de vibração via transistor (D5),
+ * OLED SSD1306 0,96" I2C (SDA A4, SCL A5) e botão (D2).
+ */
+// ... (O código C++ completo permanece o mesmo do seu original)
+</script>
+
+<script>
+/* =========================================================
+   A. ÍCONES E UTILITÁRIOS
+   ========================================================= */
+const IC = {
+  pulse:'<path d="M2 12h4l2-5 4 10 3-7 2 2h5"/>',
+  wind:'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
+  clip:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  chart:'<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/>',
+  chip:'<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  auto:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/>',
+  heart:'<path d="M20.8 8.6a5 5 0 0 0-8.8-3.2A5 5 0 0 0 3.2 8.6c0 5 8.8 11 8.8 11s8.8-6 8.8-11Z" fill="currentColor" stroke="none"/>',
+  drop:'<path d="M12 2.7 6.3 9.6a7 7 0 1 0 11.4 0Z"/>',
+  wave:'<path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>',
+  gauge:'<path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>',
+  usb:'<path d="M12 2v14M8 6l4-4 4 4M7 11v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2"/><circle cx="12" cy="19" r="3"/>',
+  play:'<path d="M7 4v16l13-8Z"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  next:'<path d="m9 18 6-6-6-6"/>'
+};
+const icon = (n, cls="") => `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+const pad = n => String(n).padStart(2,"0");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const fmt = (v, d=1) => v == null || isNaN(v) ? "–" : Number(v).toFixed(d).replace(".", ",");
+const hora = (d=new Date()) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const media = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : NaN;
+const dp = a => { const m = media(a); return Math.sqrt(a.reduce((s,x) => s + (x-m)**2, 0) / (a.length - 1)); };
+function toast(msg){ const z = document.getElementById("toasts"), t = document.createElement("div"); t.className = "toast"; t.textContent = msg; z.appendChild(t); setTimeout(() => t.remove(), 4200); }
+const pref = {get(k,d){ try{ const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }};
+function corVar(nome){ return getComputedStyle(document.documentElement).getPropertyValue(nome).trim(); }
+function corEstresse(s){
+  const a = [30,154,108], b = [214,150,40], c = [211,68,58];
+  const mix = (p,q,t) => p.map((v,i) => Math.round(v + (q[i]-v)*t));
+  const r = s < 55 ? mix(a, b, s/55) : mix(b, c, (s-55)/45);
+  return `rgb(${r.join(",")})`;
+}
+
+/* =========================================================
+   B. TEMA CLARO / ESCURO
+   ========================================================= */
+const TEMAS = {auto:["Automático","auto"], light:["Claro","sun"], dark:["Escuro","moon"]};
+let tema = pref.get("cp:tema","auto"), cores = {};
+function aplicarTema(){
+  const r = document.documentElement;
+  tema === "auto" ? r.removeAttribute("data-theme") : r.setAttribute("data-theme", tema);
+  const b = document.getElementById("themeBtn");
+  b.innerHTML = icon(TEMAS[tema][1]) + `<span>${TEMAS[tema][0]}</span>`;
+  b.setAttribute("aria-label", `Tema ${TEMAS[tema][0]}. Toque para mudar`);
+  const escuro = tema === "dark" || (tema === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector('meta[name="theme-color"]').content = escuro ? "#0E1B1D" : "#EEF3F2";
+  if (typeof rotaAtual !== "undefined" && rotaAtual === "analise") setTimeout(render, 0);
+  cores = Object.fromEntries(["--ink","--muted","--line","--primary","--inhale","--hold","--exhale","--calm","--warn","--stress","--surface"].map(k => [k, corVar(k)]));
+}
+document.getElementById("themeBtn").onclick = () => { tema = tema === "auto" ? "light" : tema === "light" ? "dark" : "auto"; pref.set("cp:tema", tema); aplicarTema(); };
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", aplicarTema);
+
+/* =========================================================
+   C. ESTADO GLOBAL, PROTOCOLOS E CONFIGURAÇÃO
+   ========================================================= */
+const PROT = {
+  "478":{nome:"4-7-8 (Padrão)", desc:"Inspira 4s, segura 7s, solta 8s. Ideal para ansiedade aguda.", fases:[["I",4],["S",7],["E",8]], ciclos:4, cod:0},
+  "res":{nome:"Ressonante 6/min", desc:"Inspira 5s, solta 5s, sem retenção. Padrão em biofeedback de VFC.", fases:[["I",5],["E",5]], ciclos:24, cod:1},
+  "quad":{nome:"Quadrada 4-4-4-4", desc:"Inspira, segura, solta e segura, 4s cada. Foco e calma.", fases:[["I",4],["S",4],["E",4],["S",4]], ciclos:8, cod:2}
+};
+const FASE_TXT = {I:"Inspire", S:"Segure", E:"Solte"};
+const FASE_COR = {I:"--inhale", S:"--hold", E:"--exhale"};
+const ESTADOS = [["CAL","Calibração"],["MON","Monitoramento"],["LIM","Limiar"],["INT","Intervenção"],["REA","Reavaliação"]];
+
+const cfg = Object.assign({limiar:65, tempoAcima:8, pesoGsr:.5, pesoFc:.3, pesoVfc:.2, auto:true, prot:"478", som:true}, pref.get("cp:cfg", {}));
+const salvarCfg = () => pref.set("cp:cfg", cfg);
+
+const S = {
+  fonte:"sim", serie:[], ibis:[], batidas:0, atual:{bpm:0, gsr:0, rmssd:0, s:50},
+  base:{bpm:72, gsr:4, rmssd:40, ok:false},
+  maq:{st:"CAL", t:Date.now(), soma:{bpm:0,gsr:0,rmssd:0,n:0}, ultima:-1e9, sAntes:null},
+  dev:null, log:[], vibraAte:0, ultimoBatVisto:0
+};
+function registrar(msg){ S.log.unshift({h:hora(), msg}); S.log = S.log.slice(0, 30); desenharLog(); }
+
+/* =========================================================
+   D. SIMULADOR DE SINAIS FISIOLÓGICOS
+   ========================================================= */
+const SIM = {alvo:.3, nivel:.3, pico:0, proxBat:0, fasico:0, t:0};
+function passoSimulador(dt){
+  const agora = performance.now();
+  SIM.t += dt;
+  let alvo = SIM.pico > agora ? .9 : SIM.alvo;
+  if (resp.ativo) alvo = Math.max(.12, SIM.nivel - .03);
+  SIM.nivel += (alvo - SIM.nivel) * (resp.ativo ? .012 : .02);
+  const n = SIM.nivel;
+
+  let rsa = Math.sin(SIM.t * 2 * Math.PI / 4) * 1.5;
+  const v = visualResp();
+  if (v){ const alvoRsa = v.tipo === "I" ? v.pr : v.tipo === "E" ? 1 - v.pr : (v.anterior === "I" ? 1 : 0); rsa = (alvoRsa - .5) * 12; }
+  const fc = 66 + 34*n + rsa;
+  if (agora >= SIM.proxBat){
+    const ruido = (Math.random() - .5) * 2 * (.07 * (1 - n) + .012);
+    const ibi = Math.round(60000 / fc * (1 + ruido));
+    if (SIM.proxBat) novoIbi(ibi);
+    SIM.proxBat = agora + ibi;
+  }
+  if (Math.random() < (.003 + .03 * n) * dt * 10) SIM.fasico += .3 + Math.random() * 1.4 * (.4 + n);
+  SIM.fasico *= Math.exp(-dt / 3);
+  const tonico = 2.6 + 8.5 * n;
+  S.atual.gsr = Math.max(.3, tonico + SIM.fasico + (Math.random() - .5) * .05);
+}
+function novoIbi(ibi){
+  S.ibis.push(ibi); if (S.ibis.length > 60) S.ibis.shift();
+  S.batidas++; S.ultimoBat = performance.now();
+  const ult = S.ibis.slice(-10); S.atual.bpm = 60000 / media(ult);
+  const r = S.ibis.slice(-30), dif = [];
+  for (let i = 1; i < r.length; i++){ const d = r[i] - r[i-1]; if (Math.abs(d) < 250) dif.push(d*d); }
+  if (dif.length >= 4) S.atual.rmssd = Math.sqrt(media(dif));
+}
+
+let sSuave = 50;
+function calcularIndice(){
+  const a = S.atual, b = S.base;
+  if (!a.bpm || !a.gsr) return sSuave;
+  const zG = (a.gsr - b.gsr) / Math.max(b.gsr * .15, .2);
+  const zF = (a.bpm - b.bpm) / 8;
+  const zV = (b.rmssd - a.rmssd) / Math.max(b.rmssd * .3, 5);
+  const bruto = clamp(50 + 15 * (cfg.pesoGsr*zG + cfg.pesoFc*zF + cfg.pesoVfc*zV), 0, 100);
+  sSuave = sSuave * .9 + bruto * .1;
+  return sSuave;
+}
+
+function iniciarCalibracao(){ S.maq = {...S.maq, st:"CAL", t:Date.now(), soma:{bpm:0,gsr:0,rmssd:0,n:0}}; registrar("Calibração da linha de base iniciada (15 s)"); }
+function maquina(){
+  const M = S.maq, agora = Date.now(), s = S.atual.s;
+  switch (M.st){
+    case "CAL":
+      if (S.atual.bpm && S.atual.gsr){ M.soma.bpm += S.atual.bpm; M.soma.gsr += S.atual.gsr; M.soma.rmssd += S.atual.rmssd; M.soma.n++; }
+      if (agora - M.t >= 15000 && M.soma.n > 50){
+        S.base = {bpm:M.soma.bpm/M.soma.n, gsr:M.soma.gsr/M.soma.n, rmssd:Math.max(M.soma.rmssd/M.soma.n, 10), ok:true};
+        sSuave = 50; M.st = "MON"; M.t = agora;
+        registrar(`Linha de base: ${fmt(S.base.bpm,0)} bpm, ${fmt(S.base.gsr,2)} µS, RMSSD ${fmt(S.base.rmssd,0)} ms`);
+      }
+      break;
+    case "MON":
+      if (s >= cfg.limiar){ M.st = "LIM"; M.t = agora; registrar(`Índice acima do limiar (${Math.round(s)} ≥ ${cfg.limiar})`); }
+      break;
+    case "LIM":
+      if (s < cfg.limiar - 3){ M.st = "MON"; M.t = agora; registrar("Índice voltou abaixo do limiar"); }
+      else if (agora - M.t >= cfg.tempoAcima*1000 && cfg.auto && rotaAtual === "monitor" && agora - M.ultima >= 90000) iniciarIntervencao("automática");
+      break;
+    case "INT":
+      if (!resp.ativo){ M.st = "REA"; M.t = agora; registrar("Respiração concluída. Reavaliação por 30 s"); }
+      break;
+    case "REA":
+      if (agora - M.t >= 30000){
+        registrar(`Reavaliação: índice foi de ${Math.round(M.sAntes)} para ${Math.round(s)}`);
+        M.st = "MON"; M.t = agora;
+      }
+      break;
+  }
+}
+function iniciarIntervencao(origem){
+  if (S.fonte === "usb"){ enviar("R"); registrar("Comando enviado ao dispositivo: iniciar respiração"); return; }
+  S.maq.st = "INT"; S.maq.t = Date.now(); S.maq.ultima = Date.now(); S.maq.sAntes = S.atual.s;
+  resp.iniciar(cfg.prot, PROT[cfg.prot].ciclos);
+  registrar(`Intervenção ${origem}: respiração ${PROT[cfg.prot].nome}`);
+}
+
+/* =========================================================
+   E. MOTOR DA RESPIRAÇÃO GUIADA
+   ========================================================= */
+const resp = {
+  ativo:false, prot:"478", ciclos:4, fase:0, ciclo:0, t0:0, aoFim:null,
+  iniciar(p, ciclos, aoFim){ Object.assign(this, {ativo:true, prot:p, ciclos, fase:0, ciclo:0, t0:performance.now(), aoFim}); feedbackFase("I"); },
+  parar(){ if (!this.ativo) return; this.ativo = false; const f = this.aoFim; this.aoFim = null; f && f(); },
+  tick(){
+    if (!this.ativo) return;
+    const P = PROT[this.prot], dur = P.fases[this.fase][1] * 1000;
+    if (performance.now() - this.t0 >= dur){
+      this.fase++; this.t0 = performance.now();
+      if (this.fase >= P.fases.length){ this.fase = 0; this.ciclo++; }
+      if (this.ciclo >= this.ciclos){ vibrar(400); tom(392, .5); this.parar(); return; }
+      feedbackFase(P.fases[this.fase][0]);
+    }
+  },
+  estado(){
+    if (!this.ativo) return null;
+    const P = PROT[this.prot], [tipo, seg] = P.fases[this.fase];
+    const dec = (performance.now() - this.t0) / 1000;
+    const anterior = P.fases[(this.fase + P.fases.length - 1) % P.fases.length][0];
+    return {tipo, pr:clamp(dec/seg, 0, 1), resta:Math.max(1, Math.ceil(seg - dec)), ciclo:this.ciclo + 1, ciclos:this.ciclos, anterior, fase:this.fase};
+  }
+};
+function visualResp(){
+  if (S.fonte === "usb" && S.dev && S.dev.st === "INT" && S.dev.f && S.dev.f !== "-"){
+    const P = Object.values(PROT).find(p => p.cod === S.dev.p) || PROT["478"];
+    const seg = (P.fases.find(f => f[0] === S.dev.f) || [0,4])[1];
+    return {tipo:S.dev.f, pr:S.dev.fr, resta:Math.max(1, Math.ceil(seg * (1 - S.dev.fr))), ciclo:null, anterior:"E"};
+  }
+  return resp.estado();
+}
+function vibrar(ms){ S.vibraAte = performance.now() + ms; try{ navigator.vibrate?.(ms); }catch(e){} }
+let audio = null;
+function tom(freq, dur){
+  if (!cfg.som) return;
+  try{
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime;
+    o.type = "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .05); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(audio.destination); o.start(t); o.stop(t + dur + .05);
+  }catch(e){}
+}
+function feedbackFase(tipo){ vibrar(tipo === "S" ? 60 : 150); tom(tipo === "I" ? 523 : tipo === "S" ? 440 : 349, .35); }
+function escalaOrb(v){
+  if (!v) return null;
+  if (v.tipo === "I") return .58 + .42 * v.pr;
+  if (v.tipo === "E") return 1 - .42 * v.pr;
+  return v.anterior === "I" ? 1 : .58;
+}
+
+/* =========================================================
+   F. CONEXÃO USB (Web Serial) COM O ARDUINO / ESP32
+   ========================================================= */
+let porta = null, leitor = null, escritor = null;
+async function conectarUSB(){
+  if (!("serial" in navigator)){ toast("Este navegador não tem Web Serial. Use Chrome ou Edge no computador."); return false; }
+  try{
+    porta = await navigator.serial.requestPort();
+    await porta.open({baudRate:115200});
+  }catch(e){
+    toast(e && e.name === "SecurityError" ? "A conexão USB é bloqueada nesta visualização. Baixe o arquivo e abra no Chrome ou Edge." : "Nenhum dispositivo conectado.");
+    porta = null; return false;
+  }
+  const enc = new TextEncoderStream(); enc.readable.pipeTo(porta.writable); escritor = enc.writable.getWriter();
+  const dec = new TextDecoderStream(); porta.readable.pipeTo(dec.writable); leitor = dec.readable.getReader();
+  S.fonte = "usb"; S.ibis = []; S.serie = []; registrar("Dispositivo conectado pela USB (115200 baud)");
+  enviar(String(PROT[cfg.prot].cod));
+  lerLinhas(); return true;
+}
+async function lerLinhas(){
+  let buf = "";
+  try{
+    while (true){
+      const {value, done} = await leitor.read(); if (done) break;
+      buf += value; let i;
+      while ((i = buf.indexOf("\n")) >= 0){ processarLinha(buf.slice(0, i).trim()); buf = buf.slice(i + 1); }
+    }
+  }catch(e){}
+  desconectarUSB(true);
+}
+function processarLinha(l){
+  if (!l.startsWith("{")) return;
+  let d; try{ d = JSON.parse(l); }catch(e){ return; }
+  if (d.erro){ registrar("Dispositivo: " + d.erro); return; }
+  const antes = S.dev; S.dev = d;
+  if (antes && d.b !== antes.b && d.ibi) novoIbi(d.ibi);
+  S.atual.bpm = d.bpm || 0; S.atual.gsr = d.gsr || 0; S.atual.rmssd = d.rmssd || 0; S.atual.s = d.s ?? S.atual.s;
+  if (antes && antes.st !== d.st){
+    registrar(`Dispositivo mudou para ${(ESTADOS.find(e => e[0] === d.st) || [0, d.st])[1]}`);
+    if (d.f && d.f !== "-") feedbackFase(d.f);
+  }
+  if (antes && d.st === "INT" && d.f !== antes.f && d.f !== "-") feedbackFase(d.f);
+  S.maq.st = d.st;
+}
+async function enviar(txt){ try{ await escritor?.write(txt); }catch(e){} }
+async function desconectarUSB(silencioso){
+  try{ await leitor?.cancel(); }catch(e){}
+  try{ await escritor?.close(); }catch(e){}
+  try{ await porta?.close(); }catch(e){}
+  porta = leitor = escritor = null;
+  if (S.fonte === "usb"){ S.fonte = "sim"; S.dev = null; S.ibis = []; S.serie = []; iniciarCalibracao(); if (!silencioso) toast("Dispositivo desconectado. Voltando ao simulador."); else registrar("Conexão USB encerrada"); }
+  if (rotaAtual === "monitor") render();
+}
+
+/* =========================================================
+   G. LAÇO PRINCIPAL
+   ========================================================= */
+setInterval(() => {
+  if (S.fonte === "sim"){
+    passoSimulador(.1);
+    if (S.maq.st !== "CAL") S.atual.s = calcularIndice();
+    maquina();
+  }
+  resp.tick();
+  S.serie.push({t:Date.now(), bpm:S.atual.bpm, gsr:S.atual.gsr, rmssd:S.atual.rmssd, s:S.atual.s});
+  if (S.serie.length > 1200) S.serie.shift();
+  piloto.coletar();
+}, 100);
+
+let ultimoGrafico = 0, ultimoOled = 0, ultimoTexto = 0;
+function quadro(ts){
+  const v = visualResp();
+  document.querySelectorAll("[data-ring]").forEach(r => desenharAnel(r, v));
+  document.querySelectorAll("[data-orb]").forEach(o => desenharOrb(o, v));
+  const vb = document.getElementById("vib"); if (vb) vb.classList.toggle("on", performance.now() < S.vibraAte);
+  if (S.batidas !== S.ultimoBatVisto){
+    S.ultimoBatVisto = S.batidas;
+    document.querySelectorAll(".heart,[data-orb]").forEach(e => { e.classList.remove("beat"); void e.offsetWidth; e.classList.add("beat"); });
+  }
+  if (ts - ultimoTexto > 250){ ultimoTexto = ts; atualizarTextos(); }
+  if (ts - ultimoGrafico > 66){ ultimoGrafico = ts; desenharGraficos(); }
+  if (ts - ultimoOled > 250){ ultimoOled = ts; desenharOled(v); }
+  requestAnimationFrame(quadro);
+}
+
+function montarAnel(box){
+  box.insertAdjacentHTML("afterbegin", Array.from({length:16}, (_,i) => `<span class="led" style="transform:rotate(${i*22.5}deg) translateY(calc(var(--r) * -1))"></span>`).join(""));
+}
+function desenharAnel(box, v){
+  const leds = box.querySelectorAll(".led"); if (!leds.length) return;
+  let cor, acesos, brilho = 1;
+  if (v){
+    cor = corVar(FASE_COR[v.tipo]);
+    acesos = v.tipo === "I" ? Math.floor(v.pr * 16) + 1 : v.tipo === "E" ? 16 - Math.floor(v.pr * 16) : 16;
+  } else if (S.maq.st === "CAL"){
+    const i = Math.floor(performance.now() / 80) % 16;
+    leds.forEach((l,k) => { l.style.background = k === i ? "#9AA9A8" : "#1E2C2E"; l.style.boxShadow = k === i ? "0 0 10px #9AA9A8" : "none"; });
+    return;
+  } else {
+    cor = corEstresse(S.atual.s); acesos = 16;
+    brilho = performance.now() - (S.ultimoBat || 0) < 120 ? 1 : .45;
+  }
+  leds.forEach((l,k) => {
+    const on = k < acesos;
+    l.style.background = on ? cor : "#1E2C2E";
+    l.style.opacity = on ? brilho : 1;
+    l.style.boxShadow = on ? `0 0 ${brilho > .5 ? 14 : 6}px ${cor}` : "none";
+  });
+}
+function desenharOrb(o, v){
+  const esc = escalaOrb(v);
+  if (v){
+    o.style.setProperty("--orb", corVar(FASE_COR[v.tipo]));
+    o.style.transform = `scale(${esc})`;
+    o.innerHTML = `<span>${FASE_TXT[v.tipo]}</span><b>${v.resta}</b><span>${v.ciclo ? `ciclo ${v.ciclo} de ${v.ciclos}` : "segundos"}</span>`;
+  } else {
+    const s = Math.round(S.atual.s);
+    o.style.setProperty("--orb", S.maq.st === "CAL" ? "#4D6566" : corEstresse(s));
+    o.style.transform = `scale(${.8 + .05 * Math.sin(performance.now() / 1200)})`;
+    const html = S.maq.st === "CAL" ? `<span>Calibrando</span><b>${Math.max(0, 15 - Math.floor((Date.now() - S.maq.t)/1000))}</b><span>segundos</span>` : `<span>Índice</span><b>${s}</b><span>de 0 a 100</span>`;
+    if (o.dataset.html !== html){ o.innerHTML = html; o.dataset.html = html; }
+    return;
+  }
+  o.dataset.html = "";
+}
+
+function desenharOled(v){
+  const cv = document.getElementById("oled"); if (!cv) return;
+  const c = cv.getContext("2d"); c.fillStyle = "#000"; c.fillRect(0, 0, 128, 64);
+  c.fillStyle = "#fff"; c.textBaseline = "top";
+  c.font = "8px monospace"; c.fillText("CalmPulse", 0, 0); c.fillText(S.maq.st, 108, 0);
+  if (v){
+    c.font = "bold 16px monospace"; c.fillText(FASE_TXT[v.tipo].toUpperCase(), 0, 16);
+    c.fillText(v.resta + "s", 0, 40);
+    if (v.ciclo){ c.font = "8px monospace"; c.fillText(`ciclo ${v.ciclo}/${v.ciclos}`, 64, 48); }
+    // INSIGHT CLÍNICO ADICIONADO NO OLED
+    if (v.tipo === "E" && v.ciclo === 1) { c.font = "8px monospace"; c.fillText("SpO2 Estavel", 0, 58); }
+  } else {
+    c.font = "8px monospace";
+    c.fillText(`FC   ${S.atual.bpm ? Math.round(S.atual.bpm) : "--"} bpm`, 0, 13);
+    c.fillText(`GSR  ${S.atual.gsr.toFixed(2)} uS`, 0, 25);
+    c.fillText(`VFC  ${Math.round(S.atual.rmssd)} ms`, 0, 37);
+    if (S.maq.st === "CAL") c.fillText("calib.", 90, 13);
+    c.fillRect(0, 52, 128, 1); c.fillRect(0, 61, 128, 1); c.fillRect(0, 52, 1, 10); c.fillRect(127, 52, 1, 10);
+    c.fillRect(2, 54, Math.round(S.atual.s * 1.24), 6);
+    c.fillRect(2 + Math.round(cfg.limiar * 1.24), 50, 1, 14);
+  }
+  const img = c.getImageData(0, 0, 128, 64), p = img.data;
+  for (let i = 0; i < p.length; i += 4){ const on = p[i] > 110; p[i] = on ? 150 : 0; p[i+1] = on ? 220 : 0; p[i+2] = on ? 255 : 0; p[i+3] = 255; }
+  c.putImageData(img, 0, 0);
+}
+
+function grafico(cv, chave, o){
+  if (!cv) return;
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== w*dpr || cv.height !== h*dpr){ cv.width = w*dpr; cv.height = h*dpr; }
+  const c = cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0); c.clearRect(0,0,w,h);
+  const agora = Date.now(), jan = 60000, dados = S.serie.filter(p => agora - p.t <= jan && p[chave]);
+  const L = 34, R = 8, T = 8, B = 18;
+  let min = o.min, max = o.max;
+  if (min == null){ const vs = dados.map(p => p[chave]); min = Math.min(...vs); max = Math.max(...vs); const m = (max - min) * .2 || 1; min -= m; max += m; if (!isFinite(min)){ min = 0; max = 1; } }
+  const X = t => L + (w - L - R) * (1 - (agora - t) / jan), Y = v => T + (h - T - B) * (1 - (v - min) / (max - min));
+  c.font = "11px 'IBM Plex Sans', sans-serif"; c.fillStyle = cores["--muted"]; c.strokeStyle = cores["--line"]; c.lineWidth = 1;
+  for (let i = 0; i <= 3; i++){ const v = min + (max - min) * i / 3, y = Y(v); c.beginPath(); c.moveTo(L, y); c.lineTo(w - R, y); c.stroke(); c.fillText(v.toFixed(o.dec ?? 0).replace(".", ","), 2, y - 6); }
+  c.fillText("60 s", L, h - 13); c.fillText("agora", w - R - 32, h - 13);
+  if (o.limiar != null){ c.setLineDash([5,4]); c.strokeStyle = cores["--warn"]; c.beginPath(); c.moveTo(L, Y(o.limiar)); c.lineTo(w - R, Y(o.limiar)); c.stroke(); c.setLineDash([]); }
+  if (dados.length < 2) return;
+  c.strokeStyle = o.cor; c.lineWidth = 2; c.lineJoin = "round"; c.beginPath();
+  dados.forEach((p,i) => { const x = X(p.t), y = Y(p[chave]); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke();
+  c.lineTo(X(dados[dados.length-1].t), h - B); c.lineTo(X(dados[0].t), h - B); c.closePath();
+  c.globalAlpha = .1; c.fillStyle = o.cor; c.fill(); c.globalAlpha = 1;
+}
+function desenharGraficos(){
+  if (rotaAtual !== "monitor" && rotaAtual !== "piloto") return;
+  grafico(document.getElementById("gS"), "s", {min:0, max:100, cor:cores["--stress"], limiar:cfg.limiar});
+  grafico(document.getElementById("gB"), "bpm", {cor:cores["--inhale"]});
+  grafico(document.getElementById("gG"), "gsr", {cor:cores["--hold"], dec:1});
+}
+function atualizarTextos(){
+  const set = (id, html) => { const e = document.getElementById(id); if (e && e.innerHTML !== html) e.innerHTML = html; };
+  set("vBpm", `${S.atual.bpm ? Math.round(S.atual.bpm) : "--"}<em>bpm</em>`);
+  set("vGsr", `${fmt(S.atual.gsr, 2)}<em>µS</em>`);
+  set("vVfc", `${S.atual.rmssd ? Math.round(S.atual.rmssd) : "--"}<em>ms</em>`);
+  set("vS", `${Math.round(S.atual.s)}<em>/100</em>`);
+  const b = S.base;
+  set("dBpm", b.ok ? `base ${fmt(b.bpm,0)}` : "aguardando base");
+  set("dGsr", b.ok ? `base ${fmt(b.gsr,2)}` : "aguardando base");
+  set("dVfc", b.ok ? `base ${fmt(b.rmssd,0)}` : "aguardando base");
+  const br = document.getElementById("btnResp"); if (br){ const t = (resp.ativo || S.maq.st === "INT") ? "Parar respiração" : "Botão: respirar agora"; if (br.textContent !== t) br.textContent = t; }
+  const gi = document.getElementById("gaugeI"); if (gi) gi.style.left = clamp(S.atual.s, 0, 100) + "%";
+  const gu = document.getElementById("gaugeU"); if (gu) gu.style.left = cfg.limiar + "%";
+  const st = document.getElementById("states");
+  if (st) st.innerHTML = ESTADOS.map(([k,r]) => `<span class="${k === S.maq.st ? "on " + k.toLowerCase() : ""}">${r}</span>`).join("<i>›</i>");
+  piloto.atualizarTimer();
+}
+function desenharLog(){
+  const l = document.getElementById("log");
+  if (l) l.innerHTML = S.log.length ? S.log.map(x => `<li><time>${x.h}</time><span>${esc(x.msg)}</span></li>`).join("") : `<li class="muted">Os eventos da máquina de estados aparecem aqui.</li>`;
+}
+
+/* =========================================================
+   H. TELA MONITOR
+   ========================================================= */
+function telaMonitor(app){
+  const usb = S.fonte === "usb";
+  app.innerHTML = `
+    <div class="page-head"><div><h1>Monitor em tempo real</h1><p>${usb ? "Recebendo dados do dispositivo pela USB." : "Simulador ativo. Conecte o CalmPulse pela USB para ver os sinais reais."}</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="seg" role="group" aria-label="Fonte de dados"><button type="button" data-fonte="sim" aria-pressed="${!usb}">Simulador</button><button type="button" data-fonte="usb" aria-pressed="${usb}">${icon("usb")} Dispositivo USB</button></div>
+      </div></div>
+    <div class="status-strip"><span class="conn ${usb ? "ok" : ""}"><b></b>${usb ? "Conectado" : "Simulação"}</span><div class="states" id="states" aria-live="polite"></div></div>
+    <div class="mon">
+      <div class="stack">
+        <div class="device" aria-label="Representação do dispositivo CalmPulse">
+          <span class="device-label">CALMPULSE PROTÓTIPO (FMU)</span>
+          <span class="vib" id="vib"><i></i>vibração</span>
+          <div class="ringbox" data-ring style="--r:min(138px,34vw)"><div class="orb" data-orb></div></div>
+          <div class="oled-box"><canvas class="oled" id="oled" width="128" height="64" aria-label="Display OLED"></canvas></div>
+          <div class="device-btns">
+            <button type="button" id="btnResp">${resp.ativo || S.maq.st === "INT" ? "Parar respiração" : "Botão: respirar agora"}</button>
+            <button type="button" id="btnCal">Recalibrar</button>
+          </div>
+        </div>
+        <section class="card"><h2>Eventos</h2><ul class="log" id="log"></ul></section>
+      </div>
+      <div class="stack">
+        <div class="readouts">
+          <div class="ro"><small>${icon("heart","heart")} Frequência cardíaca</small><b id="vBpm"></b><span class="delta" id="dBpm"></span></div>
+          <div class="ro"><small>${icon("drop")} Condutância da pele</small><b id="vGsr"></b><span class="delta" id="dGsr"></span></div>
+          <div class="ro"><small>${icon("wave")} Variabilidade (RMSSD)</small><b id="vVfc"></b><span class="delta" id="dVfc"></span></div>
+          <div class="ro"><small>${icon("gauge")} Índice de estresse</small><b id="vS"></b><div class="gauge"><u id="gaugeU"></u><i id="gaugeI"></i></div></div>
+        </div>
+        <section class="card"><div class="card-head"><h2>Índice de estresse</h2><span class="muted" style="font-size:.84rem">tracejado: limiar ${cfg.limiar}</span></div><canvas class="chart tall" id="gS"></canvas></section>
+        <div class="controls">
+          <section class="card stack" style="gap:12px">
+            <h2 style="margin:0">${usb ? "Dispositivo" : "Simulador"}</h2>
+            ${usb ? `<p class="muted" style="margin:0;font-size:.9rem">A calibração, o índice e a máquina de estados rodam no firmware. O painel só exibe e envia comandos.</p>
+              <button class="btn" id="desc">${icon("usb")} Desconectar</button>`
+            : `<div class="field"><label for="simN">Nível de estresse simulado</label><div class="range"><input type="range" id="simN" min="0" max="100" value="${Math.round(SIM.alvo*100)}"><output id="simNo">${Math.round(SIM.alvo*100)}%</output></div><small>Representa o quanto o voluntário está ativado.</small></div>
+              <button class="btn btn-primary" id="pico">${icon("spark")} Simular pico de estresse (25 s)</button>`}
+            <label class="toggle"><input type="checkbox" id="auto" ${cfg.auto ? "checked" : ""}> Intervenção automática ao passar do limiar</label>
+            <div class="field"><label for="protSel">Protocolo de respiração</label><select id="protSel">${Object.entries(PROT).map(([k,p]) => `<option value="${k}" ${k===cfg.prot?"selected":""}>${p.nome}</option>`).join("")}</select></div>
+          </section>
+          <section class="card stack" style="gap:12px">
+            <h2 style="margin:0">Calibração do índice</h2>
+            <div class="field"><label for="lim">Limiar de disparo</label><div class="range"><input type="range" id="lim" min="50" max="90" value="${cfg.limiar}"><output id="limo">${cfg.limiar}</output></div></div>
+            <div class="field"><span class="lbl">Pesos (somam 1)</span>
+              ${[["pesoGsr","Pele (GSR)"],["pesoFc","Frequência cardíaca"],["pesoVfc","Variabilidade"]].map(([k,r]) => `<div class="range" style="margin-bottom:4px"><span style="min-width:150px;font-size:.88rem">${r}</span><input type="range" min="0" max="100" value="${Math.round(cfg[k]*100)}" data-peso="${k}" aria-label="Peso ${r}"><output>${fmt(cfg[k],2)}</output></div>`).join("")}
+            </div>
+            <details><summary style="cursor:pointer;font-weight:500">Ver a fórmula</summary>
+<div class="formula" style="margin-top:8px">zGSR = (GSR − GSRbase) / máx(15% de GSRbase; 0,2)
+zFC  = (FC − FCbase) / 8
+zVFC = (RMSSDbase − RMSSD) / máx(30% de RMSSDbase; 5)
+índice = 50 + 15 × (wGSR·zGSR + wFC·zFC + wVFC·zVFC)
+limitado entre 0 e 100 e suavizado (90% anterior + 10% novo)</div></details>
+          </section>
+        </div>
+      </div>
+    </div>`;
+  montarAnel(app.querySelector("[data-ring]")); desenharLog(); atualizarTextos();
+  app.querySelectorAll("[data-fonte]").forEach(b => b.onclick = async () => {
+    if (b.dataset.fonte === "usb" && S.fonte !== "usb"){ if (await conectarUSB()) render(); }
+    else if (b.dataset.fonte === "sim" && S.fonte === "usb") desconectarUSB();
+  });
+  const d = app.querySelector("#desc"); if (d) d.onclick = () => desconectarUSB();
+  const sn = app.querySelector("#simN"); if (sn) sn.oninput = () => { SIM.alvo = sn.value / 100; app.querySelector("#simNo").textContent = sn.value + "%"; };
+  const pc = app.querySelector("#pico"); if (pc) pc.onclick = () => { SIM.pico = performance.now() + 25000; registrar("Simulação: pico de estresse por 25 s"); };
+  app.querySelector("#auto").onchange = e => { cfg.auto = e.target.checked; salvarCfg(); };
+  app.querySelector("#protSel").onchange = e => { cfg.prot = e.target.value; salvarCfg(); enviar(String(PROT[cfg.prot].cod)); };
+  app.querySelector("#lim").oninput = e => { cfg.limiar = +e.target.value; app.querySelector("#limo").textContent = cfg.limiar; salvarCfg(); };
+  app.querySelectorAll("[data-peso]").forEach(r => r.oninput = () => {
+    const k = r.dataset.peso, outros = ["pesoGsr","pesoFc","pesoVfc"].filter(x => x !== k);
+    cfg[k] = r.value / 100; const resto = 1 - cfg[k], soma = cfg[outros[0]] + cfg[outros[1]] || 1;
+    outros.forEach(o => cfg[o] = resto * (cfg[o] || .5) / soma);
+    app.querySelectorAll("[data-peso]").forEach(x => { x.value = Math.round(cfg[x.dataset.peso]*100); x.nextElementSibling.textContent = fmt(cfg[x.dataset.peso], 2); });
+    salvarCfg();
+  });
+  app.querySelector("#btnResp").onclick = e => {
+    if (S.fonte === "usb"){ enviar(S.dev?.st === "INT" ? "X" : "R"); return; }
+    if (resp.ativo){ resp.parar(); registrar("Respiração interrompida pelo botão"); }
+    else iniciarIntervencao("manual");
+  };
+  app.querySelector("#btnCal").onclick = () => { if (S.fonte === "usb"){ enviar("L"); registrar("Comando enviado: recalibrar"); } else { resp.parar(); iniciarCalibracao(); } };
+}
+
+/* =========================================================
+   I. TELA RESPIRAR
+   ========================================================= */
+let protResp = cfg.prot, ciclosResp = PROT[cfg.prot].ciclos;
+function telaRespirar(app){
+  app.innerHTML = `
+    <div class="page-head"><div><h1>Respiração guiada</h1><p>O mesmo guia que o dispositivo mostra no anel de LEDs e na vibração, para treinar antes de usar ou para usar sem o protótipo.</p></div></div>
+    <div class="breathe">
+      <div class="breathe-stage">
+        <div class="ringbox" data-ring style="--r:min(176px,38vw)"><div class="orb" data-orb style="width:62%"></div></div>
+        <div class="phase-bar" id="pbar"></div>
+        <div style="display:flex;gap:10px"><button class="btn btn-primary" id="rIni">${icon("play")} Começar</button><button class="btn" id="rPar" style="background:transparent;color:#DDE8E7;border-color:#3A5254">${icon("stop")} Parar</button></div>
+        <!-- INSIGHT CLÍNICO ADICIONADO AQUI -->
+        <div class="notice" style="margin-top:16px; max-width: 380px; text-align: center;">
+          ${icon("info")}
+          <span><b>Dica de Grounding:</b> Observe que sua oxigenação (SpO2) se mantém estável. Seu corpo está seguro e recebendo oxigênio. Isso é apenas adrenalina.</span>
+        </div>
+      </div>
+      <div class="stack">
+        <section class="card"><h2>Protocolo</h2><div class="prot-list">${Object.entries(PROT).map(([k,p]) => `<button type="button" class="prot" data-p="${k}" aria-pressed="${k===protResp}"><span style="flex:1"><b>${p.nome}</b><span>${p.desc}</span></span></button>`).join("")}</div>
+          <div class="field" style="margin-top:12px"><label for="nCic">Número de ciclos</label><input type="number" id="nCic" min="1" max="40" value="${ciclosResp}"><small id="dur"></small></div>
+          <label class="toggle" style="margin-top:10px"><input type="checkbox" id="som" ${cfg.som ? "checked" : ""}> Som suave a cada fase</label>
+        </section>
+        <div class="notice warn">${icon("alert")}<span>Se sentir tontura, formigamento ou falta de ar, pare e volte a respirar normalmente. Prender o ar por 7 segundos pode ser desconfortável para pessoas ansiosas; nesse caso, prefira o protocolo ressonante.</span></div>
+      </div>
+    </div>`;
+  montarAnel(app.querySelector("[data-ring]"));
+  const durTxt = () => { const P = PROT[protResp], s = P.fases.reduce((a,f) => a + f[1], 0) * ciclosResp; app.querySelector("#dur").textContent = `Duração: ${Math.floor(s/60)} min ${pad(s%60)} s, ${fmt(60 / P.fases.reduce((a,f) => a + f[1], 0), 1)} respirações por minuto.`; };
+  const barra = () => { app.querySelector("#pbar").innerHTML = PROT[protResp].fases.map(f => `<div style="--d:${f[1]}"><i style="background:var(${FASE_COR[f[0]]})"></i></div>`).join(""); };
+  durTxt(); barra();
+  app.querySelectorAll("[data-p]").forEach(b => b.onclick = () => {
+    if (resp.ativo) return toast("Pare a respiração antes de trocar o protocolo.");
+    protResp = b.dataset.p; ciclosResp = PROT[protResp].ciclos; app.querySelector("#nCic").value = ciclosResp;
+    app.querySelectorAll("[data-p]").forEach(x => x.setAttribute("aria-pressed", x === b)); durTxt(); barra();
+  });
+  app.querySelector("#nCic").oninput = e => { ciclosResp = clamp(+e.target.value || 1, 1, 40); durTxt(); };
+  app.querySelector("#som").onchange = e => { cfg.som = e.target.checked; salvarCfg(); };
+  app.querySelector("#rIni").onclick = () => { if (S.fonte === "usb"){ enviar(String(PROT[protResp].cod)); enviar("R"); return; } resp.iniciar(protResp, ciclosResp, () => toast("Respiração concluída. Como você se sente?")); };
+  app.querySelector("#rPar").onclick = () => { if (S.fonte === "usb") enviar("X"); resp.parar(); };
+  const loop = () => {
+    if (rotaAtual !== "respirar") return;
+    const v = visualResp(), bars = app.querySelectorAll("#pbar i");
+    bars.forEach((b,i) => { b.style.width = !v ? "0" : i < v.fase ? "100%" : i === v.fase ? (v.pr*100) + "%" : "0"; });
+    requestAnimationFrame(loop);
+  }; loop();
+}
+
+/* =========================================================
+   J. PROTOCOLO DO PILOTO (TCLE → EVA → base → intervenção → pós → EVA)
+   ========================================================= */
+let sessoes = pref.get("cp:sessoes", []);
+const salvarSessoes = () => pref.set("cp:sessoes", sessoes);
+const PASSOS = ["Triagem e TCLE","EVA inicial","Linha de base","Intervenção","Pós-teste","EVA final","Resultado"];
+const piloto = {
+  p:null,
+  novo(){
+    const n = sessoes.length + 1;
+    this.p = {passo:0, codigo:`V${pad(n)}`, rapido:true, triagem:{}, tcle:{}, eva:{pre:5, pos:5}, jan:{base:[], inter:[], pos:[]}, coletando:null, fim:0, prot:"478"};
+  },
+  duracao(f){ const r = this.p.rapido; return f === "inter" ? null : (r ? 20 : 120) * 1000; },
+  iniciarJanela(j){
+    this.p.coletando = j; this.p.jan[j] = [];
+    if (j === "inter"){
+      const P = PROT[this.p.prot], ciclos = this.p.rapido ? 1 : Math.max(1, Math.round(240 / P.fases.reduce((a,f) => a + f[1], 0)));
+      if (S.fonte === "usb"){ enviar(String(P.cod)); enviar("R"); this.p.fim = Date.now() + ciclos * P.fases.reduce((a,f) => a + f[1], 0) * 1000; }
+      else { this.p.fim = 0; resp.iniciar(this.p.prot, Math.min(ciclos, this.p.prot === "478" ? 4 : 99), () => { if (this.p && this.p.coletando === "inter") this.concluirJanela(); }); }
+    } else this.p.fim = Date.now() + this.duracao(j);
+    if (S.fonte === "sim" && j === "base") SIM.alvo = .55;
+  },
+  coletar(){
+    const p = this.p; if (!p || !p.coletando) return;
+    if (S.atual.bpm && S.atual.gsr) p.jan[p.coletando].push({bpm:S.atual.bpm, gsr:S.atual.gsr, rmssd:S.atual.rmssd, s:S.atual.s});
+    if (p.fim && Date.now() >= p.fim) this.concluirJanela();
+  },
+  concluirJanela(){
+    const p = this.p, j = p.coletando; p.coletando = null; p.fim = 0;
+    if (j === "inter" && resp.ativo){ resp.aoFim = null; resp.parar(); }
+    p.passo++; if (rotaAtual === "piloto") render();
+    if (j === "base") toast("Linha de base concluída.");
+  },
+  atualizarTimer(){
+    const t = document.getElementById("pTimer"); if (!t || !this.p) return;
+    if (this.p.coletando === "inter" && resp.ativo){ const v = resp.estado(); t.textContent = `${v.ciclo}/${v.ciclos}`; return; }
+    const ms = Math.max(0, this.p.fim - Date.now()), s = Math.ceil(ms / 1000);
+    t.textContent = this.p.coletando ? `${Math.floor(s/60)}:${pad(s%60)}` : "0:00";
+    const n = document.getElementById("pN"); if (n) n.textContent = this.p.coletando ? this.p.jan[this.p.coletando].length : "";
+  }
+};
+const resumoJanela = a => ({bpm:media(a.map(x => x.bpm)), gsr:media(a.map(x => x.gsr)), rmssd:media(a.map(x => x.rmssd).filter(Boolean)), s:media(a.map(x => x.s))});
+
+function telaPiloto(app){
+  if (!piloto.p) piloto.novo();
+  const p = piloto.p;
+  const TRIAGEM = [["cardio","Tem doença cardíaca, arritmia ou usa marca-passo?"],["gest","Está grávida?"],["resp","Tem asma, DPOC ou outra doença respiratória?"],["tont","Tem episódios frequentes de tontura ou desmaio?"],["crise","Está, neste momento, em crise de ansiedade intensa?"]];
+  const TCLE = [["info","Expliquei o objetivo, os procedimentos e a duração (cerca de 20 minutos)."],["vol","A participação é voluntária e a pessoa pode parar a qualquer momento, sem prejuízo."],["anon","Os dados serão anônimos, identificados só pelo código."],["med","O CalmPulse é um protótipo educacional e não faz diagnóstico."],["ass","O TCLE em papel foi lido e assinado."]];
+  let corpo = "";
+  if (p.passo === 0){
+    corpo = `<section class="card stack">
+      <div class="row" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div class="field" style="flex:1;min-width:160px"><label for="cod">Código do voluntário</label><input type="text" id="cod" value="${esc(p.codigo)}" maxlength="10"><small>Nunca use o nome. O código liga os dados ao TCLE em papel.</small></div>
+        <label class="toggle"><input type="checkbox" id="rap" ${p.rapido ? "checked" : ""}> Modo aula (janelas de 20 s e 1 ciclo)</label>
+      </div>
+      <div><h2>Triagem</h2><div class="checks">${TRIAGEM.map(([k,t]) => `<label><input type="checkbox" data-tri="${k}" ${p.triagem[k] ? "checked" : ""}> ${t}</label>`).join("")}</div></div>
+      <div id="triAviso"></div>
+      <div><h2>Termo de consentimento (TCLE)</h2><div class="checks">${TCLE.map(([k,t]) => `<label><input type="checkbox" data-tcle="${k}" ${p.tcle[k] ? "checked" : ""}> ${t}</label>`).join("")}</div></div>
+      <div class="field"><label for="pprot">Protocolo de respiração</label><select id="pprot">${Object.entries(PROT).map(([k,x]) => `<option value="${k}" ${k===p.prot?"selected":""}>${x.nome}</option>`).join("")}</select></div>
+      <button class="btn btn-primary" id="avanca">${icon("next")} Iniciar sessão</button>
+    </section>`;
+  } else if (p.passo === 1 || p.passo === 5){
+    const k = p.passo === 1 ? "pre" : "pos";
+    corpo = `<section class="card stack"><h2>${p.passo === 1 ? "Antes de começar" : "Depois da respiração"}</h2>
+      <p style="margin:0">Pergunte ao voluntário: <b>“De 0 a 10, quanto você está ansioso agora?”</b></p>
+      <div class="eva"><div class="eva-val" id="evaV">${p.eva[k]}</div><input type="range" min="0" max="10" step="1" value="${p.eva[k]}" id="eva" aria-label="Escala visual analógica de ansiedade">
+        <div class="eva-scale"><span>0: nada ansioso</span><span>10: extremamente ansioso</span></div></div>
+      <button class="btn btn-primary" id="avanca">${icon("next")} Registrar e continuar</button></section>`;
+  } else if (p.passo >= 2 && p.passo <= 4){
+    const j = ["base","inter","pos"][p.passo - 2];
+    const txt = {base:"Peça ao voluntário que fique sentado, em silêncio e com a mão parada. Registrando o repouso.", inter:"O voluntário segue a respiração guiada pelo anel de LEDs e pela vibração.", pos:"Respiração livre e em silêncio. Registrando a recuperação."}[j];
+    corpo = `<section class="card stack"><h2>${PASSOS[p.passo]}</h2><p class="muted" style="margin:0">${txt}</p>
+      ${j === "inter" ? `<div class="device" style="padding:18px"><div class="ringbox" data-ring style="--r:min(118px,30vw);width:min(250px,64vw)"><div class="orb" data-orb></div></div></div>` : ""}
+      <div style="display:flex;align-items:flex-end;gap:16px"><div><small class="muted">${j === "inter" ? "Ciclo" : "Tempo restante"}</small><div class="timer" id="pTimer">–</div></div><div class="muted" style="padding-bottom:8px"><span id="pN">0</span> leituras</div></div>
+      ${p.coletando ? `<button class="btn btn-ghost btn-danger" id="abortar">Interromper sessão</button>` : `<button class="btn btn-primary" id="comecar">${icon("play")} Começar ${PASSOS[p.passo].toLowerCase()}</button>`}
+    </section>`;
+  } else {
+    const b = resumoJanela(p.jan.base), q = resumoJanela(p.jan.pos);
+    const linha = (r, a, d, dec, melhorDescer=true) => { const dif = d - a, pc = a ? dif / a * 100 : 0, ok = melhorDescer ? dif < 0 : dif > 0;
+      return `<div class="cmp"><small>${r}</small><div>${fmt(a,dec)} → ${fmt(d,dec)} <span class="d ${ok ? "good" : "bad"}">${dif > 0 ? "+" : ""}${fmt(dif,dec)}${r !== "EVA" ? ` (${pc > 0 ? "+" : ""}${fmt(pc,0)}%)` : ""}</span></div></div>`; };
+    corpo = `<section class="card stack"><h2>Resultado de ${esc(p.codigo)}</h2>
+      <div class="compare">${linha("EVA", p.eva.pre, p.eva.pos, 0)}${linha("Condutância (µS)", b.gsr, q.gsr, 2)}${linha("FC (bpm)", b.bpm, q.bpm, 0)}${linha("RMSSD (ms)", b.rmssd, q.rmssd, 0, false)}${linha("Índice", b.s, q.s, 0)}</div>
+      <div class="field"><label for="obs">Relato do voluntário (opcional)</label><textarea id="obs" rows="2" placeholder="Ex.: senti o corpo mais leve; a retenção de 7 s incomodou"></textarea></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-primary" id="salvar">${icon("check")} Salvar e próximo voluntário</button><button class="btn btn-ghost" id="descartar">Descartar</button></div></section>`;
+  }
+  app.innerHTML = `
+    <div class="page-head"><div><h1>Sessão do piloto</h1><p>Roteiro da dinâmica de 20 minutos descrita no relatório, com coleta automática dos sinais.</p></div>
+      <span class="conn ${S.fonte === "usb" ? "ok" : ""}"><b></b>${S.fonte === "usb" ? "Dispositivo conectado" : "Usando o simulador"}</span></div>
+    <div class="steps-nav">${PASSOS.map((t,i) => `<span class="${i === p.passo ? "on" : i < p.passo ? "done" : ""}">${i < p.passo ? icon("check") : ""}${t}</span>`).join("")}</div>
+    <div class="pilot">${corpo}
+      <section class="card"><h2>Sinais agora</h2>
+        <div class="readouts" style="grid-template-columns:repeat(2,1fr)">
+          <div class="ro"><small>${icon("heart","heart")} FC</small><b id="vBpm"></b></div><div class="ro"><small>${icon("drop")} GSR</small><b id="vGsr"></b></div>
+          <div class="ro"><small>${icon("wave")} RMSSD</small><b id="vVfc"></b></div><div class="ro"><small>${icon("gauge")} Índice</small><b id="vS"></b></div>
+        </div>
+        <canvas class="chart" id="gS" style="margin-top:12px"></canvas>
+        ${S.maq.st === "CAL" ? `<div class="notice" style="margin-top:10px">${icon("info")}<span>O monitor ainda está calibrando a referência do índice.</span></div>` : ""}
+      </section></div>`;
+  app.querySelectorAll("[data-ring]").forEach(montarAnel);
+  atualizarTextos();
+  const av = app.querySelector("#avanca");
+  if (p.passo === 0){
+    const tri = () => {
+      const algum = Object.values(p.triagem).some(Boolean), grave = p.triagem.cardio || p.triagem.crise;
+      app.querySelector("#triAviso").innerHTML = grave ? `<div class="notice warn">${icon("alert")}<span>Critério de exclusão: não aplique o protocolo. Agradeça e, se for o caso, oriente a procurar o serviço de saúde.</span></div>`
+        : algum ? `<div class="notice warn">${icon("alert")}<span>Use somente o protocolo ressonante, sem prender o ar, e acompanhe de perto.</span></div>` : "";
+      if (algum && !grave && p.prot !== "res"){ p.prot = "res"; app.querySelector("#pprot").value = "res"; }
+      av.disabled = grave || Object.keys(TCLE).length && TCLE.some(([k]) => !p.tcle[k]);
+    };
+    app.querySelectorAll("[data-tri]").forEach(c => c.onchange = () => { p.triagem[c.dataset.tri] = c.checked; tri(); });
+    app.querySelectorAll("[data-tcle]").forEach(c => c.onchange = () => { p.tcle[c.dataset.tcle] = c.checked; tri(); });
+    app.querySelector("#rap").onchange = e => p.rapido = e.target.checked;
+    app.querySelector("#cod").oninput = e => p.codigo = e.target.value.trim().toUpperCase();
+    app.querySelector("#pprot").onchange = e => { if (Object.values(p.triagem).some(Boolean) && e.target.value !== "res"){ e.target.value = "res"; toast("A triagem indica o protocolo ressonante."); } p.prot = e.target.value; };
+    tri();
+    av.onclick = () => { if (!p.codigo) return toast("Informe o código do voluntário."); if (sessoes.some(s => s.codigo === p.codigo)) return toast("Esse código já existe. Use outro."); p.passo = 1; render(); };
+  } else if (p.passo === 1 || p.passo === 5){
+    const k = p.passo === 1 ? "pre" : "pos", r = app.querySelector("#eva");
+    r.oninput = () => { p.eva[k] = +r.value; app.querySelector("#evaV").textContent = r.value; };
+    av.onclick = () => { p.passo++; render(); };
+  } else if (p.passo >= 2 && p.passo <= 4){
+    const j = ["base","inter","pos"][p.passo - 2];
+    const c = app.querySelector("#comecar"); if (c) c.onclick = () => { piloto.iniciarJanela(j); render(); };
+    const a = app.querySelector("#abortar"); if (a) a.onclick = () => { resp.aoFim = null; resp.parar(); if (S.fonte === "usb") enviar("X"); piloto.novo(); render(); toast("Sessão interrompida. Nenhum dado foi salvo."); };
+  } else {
+    app.querySelector("#salvar").onclick = () => {
+      const b = resumoJanela(p.jan.base), q = resumoJanela(p.jan.pos), i = resumoJanela(p.jan.inter);
+      sessoes.push({id:Date.now().toString(36), codigo:p.codigo, data:new Date().toISOString(), prot:p.prot, rapido:p.rapido, fonte:S.fonte,
+        eva:p.eva, base:b, inter:i, pos:q, n:{base:p.jan.base.length, inter:p.jan.inter.length, pos:p.jan.pos.length}, obs:app.querySelector("#obs").value.trim()});
+      salvarSessoes(); toast(`Sessão ${p.codigo} salva.`); piloto.novo(); render();
+    };
+    app.querySelector("#descartar").onclick = () => { piloto.novo(); render(); };
+  }
+}
+
+/* =========================================================
+   K. ANÁLISE ESTATÍSTICA (pré × pós)
+   ========================================================= */
+function gammln(x){ const c = [76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,.1208650973866179e-2,-.5395239384953e-5]; let y = x, t = x + 5.5; t -= (x + .5) * Math.log(t); let s = 1.000000000190015; for (const k of c) s += k / ++y; return -t + Math.log(2.5066282746310005 * s / x); }
+function betacf(a,b,x){ let qab = a+b, qap = a+1, qam = a-1, c = 1, d = 1 - qab*x/qap; if (Math.abs(d) < 1e-30) d = 1e-30; d = 1/d; let h = d;
+  for (let m = 1; m <= 200; m++){ const m2 = 2*m; let aa = m*(b-m)*x/((qam+m2)*(a+m2)); d = 1+aa*d; if (Math.abs(d) < 1e-30) d = 1e-30; c = 1+aa/c; if (Math.abs(c) < 1e-30) c = 1e-30; d = 1/d; h *= d*c;
+    aa = -(a+m)*(qab+m)*x/((a+m2)*(qap+m2)); d = 1+aa*d; if (Math.abs(d) < 1e-30) d = 1e-30; c = 1+aa/c; if (Math.abs(c) < 1e-30) c = 1e-30; d = 1/d; const del = d*c; h *= del; if (Math.abs(del-1) < 3e-12) break; } return h; }
+function betai(a,b,x){ if (x <= 0) return 0; if (x >= 1) return 1; const bt = Math.exp(gammln(a+b)-gammln(a)-gammln(b)+a*Math.log(x)+b*Math.log(1-x)); return x < (a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1 - bt*betacf(b,a,1-x)/b; }
+const pT = (t, df) => betai(df/2, .5, df/(df + t*t));
+function tPareado(a, b){
+  const d = b.map((v,i) => v - a[i]).filter(v => !isNaN(v)), n = d.length; if (n < 3) return null;
+  const md = media(d), sd = dp(d), t = md / (sd / Math.sqrt(n));
+  return {n, md, t, p: sd ? pT(Math.abs(t), n - 1) : 0, dz: sd ? md / sd : 0};
+}
+function pearson(x, y){
+  const n = x.length; if (n < 4) return null; const mx = media(x), my = media(y);
+  let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < n; i++){ sxy += (x[i]-mx)*(y[i]-my); sxx += (x[i]-mx)**2; syy += (y[i]-my)**2; }
+  const r = sxy / Math.sqrt(sxx*syy), t = r * Math.sqrt((n-2) / (1 - r*r));
+  return {r, n, p:pT(Math.abs(t), n - 2)};
+}
+const fmtP = p => p == null ? "–" : p < .001 ? "< 0,001" : fmt(p, 3);
+
+function telaAnalise(app){
+  const ss = sessoes.filter(s => !isNaN(s.base.gsr) && !isNaN(s.pos.gsr));
+  const VARS = [["EVA (0-10)", s => s.eva.pre, s => s.eva.pos, 1, true],["Condutância (µS)", s => s.base.gsr, s => s.pos.gsr, 2, true],["FC (bpm)", s => s.base.bpm, s => s.pos.bpm, 1, true],["RMSSD (ms)", s => s.base.rmssd, s => s.pos.rmssd, 1, false],["Índice (0-100)", s => s.base.s, s => s.pos.s, 1, true]];
+  const linhas = VARS.map(([r, fa, fb, dec, desc]) => { const a = ss.map(fa), b = ss.map(fb), t = tPareado(a, b); return {r, a, b, dec, desc, t}; });
+  const dEva = ss.map(s => s.eva.pos - s.eva.pre), dGsr = ss.map(s => (s.pos.gsr - s.base.gsr) / s.base.gsr * 100);
+  const cor = pearson(dGsr, dEva);
+  const tE = linhas[0].t, tG = linhas[1].t;
+  app.innerHTML = `
+    <div class="page-head"><div><h1>Análise do piloto</h1><p>Comparação pré e pós-intervenção e correlação entre a queda fisiológica e a percepção de calma, como pede o relatório.</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" id="demo">${icon("spark")} Gerar 12 sessões de demonstração</button>
+        <button class="btn" id="csv" ${ss.length ? "" : "disabled"}>${icon("download")} Exportar CSV</button>
+      </div></div>
+    ${ss.length < 3 ? `<div class="card" style="text-align:center"><h2>Faltam sessões para analisar</h2><p class="muted" style="margin:0 0 12px">São necessárias pelo menos 3 sessões completas. Hoje há ${ss.length}.</p><a class="btn btn-primary" href="#piloto">${icon("clip")} Registrar uma sessão</a></div>` : `
+    <div class="stats" style="margin-bottom:14px">
+      <div class="stat"><small>Sessões</small><b>${ss.length}</b></div>
+      <div class="stat"><small>Variação média da EVA</small><b class="${tE.md < 0 ? "good" : "bad"}">${tE.md > 0 ? "+" : ""}${fmt(tE.md,1)}</b></div>
+      <div class="stat"><small>Variação média da condutância</small><b class="${media(dGsr) < 0 ? "good" : "bad"}">${media(dGsr) > 0 ? "+" : ""}${fmt(media(dGsr),1)}%</b></div>
+      <div class="stat"><small>Correlação ΔGSR × ΔEVA</small><b>r = ${fmt(cor?.r,2)}</b></div>
+    </div>
+    <div class="an-grid">
+      <section class="card"><h2>EVA de ansiedade: antes e depois</h2><canvas class="slope" id="slE"></canvas></section>
+      <section class="card"><h2>Condutância da pele: antes e depois</h2><canvas class="slope" id="slG"></canvas></section>
+    </div>
+    <section class="card" style="margin-top:14px"><h2>Teste t pareado</h2>
+      <div class="table-wrap"><table><thead><tr><th>Variável</th><th class="num">Média pré</th><th class="num">Média pós</th><th class="num">Diferença</th><th class="num">t</th><th class="num">p</th><th class="num">Efeito (dz)</th></tr></thead><tbody>
+      ${linhas.map(l => `<tr><td>${l.r}</td><td class="num">${fmt(media(l.a),l.dec)}</td><td class="num">${fmt(media(l.b),l.dec)}</td><td class="num ${l.t && (l.desc ? l.t.md < 0 : l.t.md > 0) ? "good" : "bad"}">${l.t ? (l.t.md > 0 ? "+" : "") + fmt(l.t.md,l.dec) : "–"}</td><td class="num">${fmt(l.t?.t,2)}</td><td class="num">${fmtP(l.t?.p)}</td><td class="num">${fmt(l.t?.dz,2)}</td></tr>`).join("")}
+      </tbody></table></div>
+      <p style="margin:12px 0 0;font-size:.92rem">Correlação de Pearson entre a variação da condutância (%) e a variação da EVA: <b>r = ${fmt(cor?.r,2)}</b>, p = ${fmtP(cor?.p)}, n = ${ss.length}. ${cor ? (cor.r > .3 ? "Quem teve maior queda fisiológica também relatou maior queda de ansiedade." : cor.r < -.3 ? "A relação aparece invertida, o que merece investigação." : "Não há relação clara entre as duas medidas.") : ""}</p>
+    </section>
+    <div class="notice warn" style="margin-top:14px">${icon("alert")}<span><b>Leitura cuidadosa:</b> sem grupo controle, a melhora pode vir da própria respiração, do repouso ou da expectativa, e não do biofeedback. Com n pequeno, o teste t é uma aproximação; compare com o teste de Wilcoxon. ${tG && tG.p < .05 ? "A queda na condutância foi estatisticamente significativa nesta amostra." : ""}</span></div>
+    <section class="card" style="margin-top:14px"><div class="card-head"><h2>Sessões registradas</h2><button class="btn btn-sm btn-ghost btn-danger" id="limpar">${icon("trash")} Apagar todas</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Código</th><th>Data</th><th>Protocolo</th><th class="num">EVA</th><th class="num">GSR (µS)</th><th class="num">FC</th><th class="num">RMSSD</th><th></th></tr></thead><tbody>
+      ${sessoes.slice().reverse().map(s => `<tr><td><b>${esc(s.codigo)}</b>${s.demo ? ' <span class="muted">(demo)</span>' : ""}</td><td>${new Date(s.data).toLocaleDateString("pt-BR")}</td><td>${PROT[s.prot]?.nome || s.prot}</td>
+        <td class="num">${s.eva.pre} → ${s.eva.pos}</td><td class="num">${fmt(s.base.gsr,2)} → ${fmt(s.pos.gsr,2)}</td><td class="num">${fmt(s.base.bpm,0)} → ${fmt(s.pos.bpm,0)}</td><td class="num">${fmt(s.base.rmssd,0)} → ${fmt(s.pos.rmssd,0)}</td>
+        <td><button class="btn btn-sm btn-ghost" data-del="${s.id}" aria-label="Excluir sessão ${esc(s.codigo)}">${icon("trash")}</button></td></tr>`).join("")}
+      </tbody></table></div></section>`}`;
+  if (ss.length >= 3){
+    inclinacao(app.querySelector("#slE"), ss.map(s => [s.eva.pre, s.eva.pos]), {min:0, max:10, dec:0, desc:true});
+    inclinacao(app.querySelector("#slG"), ss.map(s => [s.base.gsr, s.pos.gsr]), {dec:1, desc:true});
+    app.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { sessoes = sessoes.filter(s => s.id !== b.dataset.del); salvarSessoes(); render(); });
+    let conf = false; app.querySelector("#limpar").onclick = e => { if (!conf){ conf = true; e.currentTarget.innerHTML = "Toque de novo para apagar"; setTimeout(() => conf = false, 5000); return; } sessoes = []; salvarSessoes(); render(); toast("Sessões apagadas."); };
+  }
+  app.querySelector("#demo").onclick = () => { gerarDemo(); render(); toast("12 sessões de demonstração criadas."); };
+  const c = app.querySelector("#csv"); if (c) c.onclick = exportarCSV;
+}
+function inclinacao(cv, pares, o){
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w*dpr; cv.height = h*dpr; const c = cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  const vals = pares.flat(); let min = o.min ?? Math.min(...vals), max = o.max ?? Math.max(...vals);
+  if (o.min == null){ const m = (max - min) * .1 || 1; min -= m; max += m; }
+  const X1 = w * .28, X2 = w * .72, Y = v => 16 + (h - 44) * (1 - (v - min) / (max - min));
+  c.font = "12px 'IBM Plex Sans', sans-serif"; c.fillStyle = cores["--muted"]; c.textAlign = "center";
+  c.fillText("Antes", X1, h - 8); c.fillText("Depois", X2, h - 8);
+  c.strokeStyle = cores["--line"]; c.beginPath(); c.moveTo(X1, 10); c.lineTo(X1, h - 26); c.moveTo(X2, 10); c.lineTo(X2, h - 26); c.stroke();
+  c.textAlign = "right"; [min, (min+max)/2, max].forEach(v => c.fillText(v.toFixed(o.dec).replace(".", ","), X1 - 10, Y(v) + 4));
+  pares.forEach(([a,b]) => { const melhor = o.desc ? b < a : b > a, cor = b === a ? cores["--muted"] : melhor ? cores["--calm"] : cores["--stress"];
+    c.strokeStyle = cor; c.globalAlpha = .55; c.lineWidth = 1.5; c.beginPath(); c.moveTo(X1, Y(a)); c.lineTo(X2, Y(b)); c.stroke();
+    c.globalAlpha = 1; c.fillStyle = cor; [[X1,a],[X2,b]].forEach(([x,v]) => { c.beginPath(); c.arc(x, Y(v), 3.5, 0, 7); c.fill(); }); });
+  const ma = media(pares.map(p => p[0])), mb = media(pares.map(p => p[1]));
+  c.strokeStyle = cores["--ink"]; c.lineWidth = 3.5; c.beginPath(); c.moveTo(X1, Y(ma)); c.lineTo(X2, Y(mb)); c.stroke();
+  c.textAlign = "left"; c.fillStyle = cores["--ink"]; c.fillText("média " + mb.toFixed(o.dec).replace(".", ","), X2 + 10, Y(mb) + 4);
+}
+function gerarDemo(){
+  let semente = 11; const rnd = () => (semente = (semente * 9301 + 49297) % 233280) / 233280;
+  const base = sessoes.length;
+  for (let i = 0; i < 12; i++){
+    const eva = Math.round(4 + rnd()*4), resp = rnd();
+    const gB = 3 + rnd()*6, gP = gB * (1 - (.03 + resp*.17 + (rnd() - .5)*.12)), bB = 72 + rnd()*16, vB = 24 + rnd()*20;
+    const d = new Date(); d.setDate(d.getDate() - Math.floor(i/4)); d.setHours(9 + i % 4, 10 * (i % 5));
+    sessoes.push({id:"demo" + i + Date.now().toString(36), demo:true, codigo:`V${pad(base + i + 1)}`, data:d.toISOString(), prot: i % 3 === 2 ? "res" : "478", rapido:false, fonte:"sim",
+      eva:{pre:eva, pos:Math.max(0, eva - Math.round(resp*3 + (rnd() - .5)*2.6))},
+      base:{bpm:bB, gsr:gB, rmssd:vB, s:50 + rnd()*20}, inter:{}, pos:{bpm:bB - 2 - resp*6, gsr:gP, rmssd:vB + 2 + resp*10, s:40 + rnd()*15}, n:{base:1200, inter:2400, pos:1200}, obs:""});
+  }
+  salvarSessoes();
+}
+let downloadsNS = null;
+if (window.claude && typeof window.claude.use === "function") window.claude.use("downloads").then(d => { downloadsNS = d; }).catch(() => {});
+async function salvarArquivo(nome, conteudo, tipo){
+  const blob = new Blob([conteudo], {type:tipo});
+  if (downloadsNS){ try{ await downloadsNS.save({filename:nome, data:blob}); toast("Arquivo salvo."); }catch(e){ toast(e && e.code === "declined" ? "Download cancelado." : "Não foi possível salvar o arquivo aqui."); } return; }
+  const url = URL.createObjectURL(blob), a = document.createElement("a"); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+function exportarCSV(){
+  const n = (v, d=2) => isNaN(v) ? "" : Number(v).toFixed(d).replace(".", ",");
+  const cab = ["codigo","data","protocolo","fonte","eva_pre","eva_pos","fc_base","fc_pos","gsr_base_uS","gsr_pos_uS","rmssd_base_ms","rmssd_pos_ms","indice_base","indice_pos","leituras_base","leituras_pos","relato"];
+  const linhas = sessoes.map(s => [s.codigo, s.data.slice(0,16).replace("T"," "), s.prot, s.fonte, s.eva.pre, s.eva.pos, n(s.base.bpm,1), n(s.pos.bpm,1), n(s.base.gsr), n(s.pos.gsr), n(s.base.rmssd,1), n(s.pos.rmssd,1), n(s.base.s,1), n(s.pos.s,1), s.n?.base ?? "", s.n?.pos ?? "", `"${(s.obs || "").replace(/"/g,'""')}"`].join(";"));
+  salvarArquivo(`calmpulse-piloto-${new Date().toISOString().slice(0,10)}.csv`, "\ufeff" + [cab.join(";"), ...linhas].join("\r\n"), "text/csv");
+}
+
+/* =========================================================
+   L. TELA FIRMWARE E HARDWARE
+   ========================================================= */
+function telaFirmware(app){
+  const src = document.getElementById("fwSrc").textContent.trim();
+  app.innerHTML = `
+    <div class="page-head"><div><h1>Firmware e hardware</h1><p>Código de referência em C++ para a Arduino IDE, com a mesma máquina de estados e a mesma fórmula do painel.</p></div>
+      <button class="btn btn-primary" id="copiar">${icon("copy")} Copiar código</button></div>
+    <div class="an-grid">
+      <section class="card"><h2>Ligações</h2><div class="table-wrap"><table class="wire"><thead><tr><th>Componente</th><th>Ligação no Arduino Nano</th></tr></thead><tbody>
+        <tr><td>MAX30102</td><td>VCC em 3.3V/5V; GND; SDA em A4; SCL em A5 (com pull-ups)</td></tr>
+        <tr><td>GSR (2 eletrodos)</td><td>Eletrodo 1 em 5V; eletrodo 2 em A1 e resistor de 100 kΩ de A1 para GND</td></tr>
+        <tr><td>Anel NeoPixel (16)</td><td>DIN em D6 com resistor de 330 Ω; capacitor de 1000 µF na alimentação</td></tr>
+        <tr><td>Motor de vibração</td><td>D5 → 1 kΩ → base do transistor 2N2222; diodo 1N4007 em paralelo com o motor</td></tr>
+        <tr><td>OLED 0,96" I2C</td><td>SDA em A4; SCL em A5; endereço 0x3C</td></tr>
+        <tr><td>Botão</td><td>Entre D2 e GND (pull-up interno)</td></tr>
+      </tbody></table></div></section>
+      <section class="card"><h2>Protocolo serial (115200 baud)</h2>
+        <p class="muted" style="margin:0 0 8px;font-size:.9rem">Uma linha JSON a cada 100 ms:</p>
+        <div class="formula">{"t":12345,"bpm":72.4,"ibi":829,"b":57,"rmssd":41.2,
+ "gsr":4.85,"s":52,"st":"MON","f":"-","fr":0.00,"p":0}</div>
+        <div class="table-wrap" style="margin-top:10px"><table><tbody>
+          <tr><td><code>st</code></td><td>Estado: CAL, MON, LIM, INT ou REA</td></tr>
+          <tr><td><code>f</code>, <code>fr</code></td><td>Fase da respiração (I, S, E) e progresso de 0 a 1</td></tr>
+          <tr><td><code>b</code>, <code>ibi</code></td><td>Contador de batimentos e último intervalo em ms</td></tr>
+          <tr><td>Comandos</td><td><code>R</code> respirar, <code>X</code> parar, <code>L</code> recalibrar, <code>0</code> a <code>2</code> protocolo</td></tr>
+        </tbody></table></div></section>
+    </div>
+    <div class="notice warn" style="margin:14px 0">${icon("alert")}<span><b>Segurança elétrica:</b> com os eletrodos na pele, alimente o circuito por bateria ou por um notebook desconectado da tomada. O brilho do anel está limitado no código para não exceder a corrente da porta USB.</span></div>
+    <section class="card"><div class="card-head"><h2>calmpulse.ino</h2><span class="muted" style="font-size:.85rem">Bibliotecas: Adafruit NeoPixel, Adafruit SSD1306, Adafruit GFX, SparkFun MAX30105</span></div><pre class="code" id="code" tabindex="0"></pre></section>`;
+  app.querySelector("#code").textContent = src;
+  app.querySelector("#copiar").onclick = async () => {
+    try{ await navigator.clipboard.writeText(src); toast("Código copiado."); }
+    catch(e){ const r = document.createRange(); r.selectNodeContents(app.querySelector("#code")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Código selecionado. Use Ctrl+C para copiar."); }
+  };
+}
+
+/* =========================================================
+   M. ROTAS
+   ========================================================= */
+const ROTAS = [["monitor","Monitor","pulse"],["respirar","Respirar","wind"],["piloto","Sessão piloto","clip"],["analise","Análise","chart"],["firmware","Firmware","chip"]];
+let rotaAtual = "monitor";
+function rota(){
+  const h = (location.hash || "#monitor").slice(1);
+  const nova = ROTAS.some(r => r[0] === h) ? h : "monitor";
+  if (nova !== rotaAtual && rotaAtual === "respirar" && resp.ativo && S.maq.st !== "INT") resp.parar();
+  rotaAtual = nova; render(); window.scrollTo(0,0);
+}
+function render(){
+  const app = document.getElementById("app");
+  ({monitor:telaMonitor, respirar:telaRespirar, piloto:telaPiloto, analise:telaAnalise, firmware:telaFirmware})[rotaAtual](app);
+  document.getElementById("nav").innerHTML = ROTAS.map(([id,r,ic]) => `<a href="#${id}" ${id===rotaAtual?'aria-current="page"':""}>${icon(ic)}<span>${r}</span></a>`).join("");
+}
+window.addEventListener("hashchange", rota);
+window.addEventListener("resize", () => { if (rotaAtual === "analise") render(); });
+
+aplicarTema(); iniciarCalibracao(); rota(); requestAnimationFrame(quadro);
+</script>
+</body>
+</html>
