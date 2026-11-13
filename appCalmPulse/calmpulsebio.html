@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalmPulse - Seu Momento de Calma</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.5s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        /* Seção de Monitoramento */
+        .monitoring-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .metrics {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 20px;
+            text-align: center;
+            flex: 1;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .metric-unit {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* LED de Respiração */
+        .breathing-led {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 50px rgba(102, 126, 234, 0.5);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .breathing-led.inhale {
+            animation: inhale 4s ease-in-out;
+        }
+
+        .breathing-led.hold {
+            animation: hold 7s ease-in-out;
+        }
+
+        .breathing-led.exhale {
+            animation: exhale 8s ease-in-out;
+        }
+
+        @keyframes inhale {
+            0% { transform: scale(1); box-shadow: 0 0 50px rgba(102, 126, 234, 0.5); }
+            100% { transform: scale(1.5); box-shadow: 0 0 80px rgba(102, 126, 234, 0.8); }
+        }
+
+        @keyframes hold {
+            0%, 100% { transform: scale(1.5); box-shadow: 0 0 80px rgba(102, 126, 234, 0.8); }
+        }
+
+        @keyframes exhale {
+            0% { transform: scale(1.5); box-shadow: 0 0 80px rgba(102, 126, 234, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 50px rgba(102, 126, 234, 0.5); }
+        }
+
+        .breathing-text {
+            color: white;
+            font-size: 1.5em;
+            font-weight: 300;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .breathing-instruction {
+            text-align: center;
+            color: #666;
+            font-size: 1.1em;
+            margin-top: 20px;
+        }
+
+        /* Botões */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Seção do Formulário */
+        .form-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radio-option input[type="radio"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        /* Mensagem de Sucesso */
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .success-message h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .success-message p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .success-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        /* Status de Conexão */
+        .connection-status {
+            text-align: center;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.simulating {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Responsivo */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .metrics {
+                flex-direction: column;
+            }
+
+            .breathing-led {
+                width: 150px;
+                height: 150px;
+            }
+
+            .metric-value {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌊 CalmPulse</h1>
+            <p>Seu momento de calma está aqui</p>
+        </div>
+
+        <!-- Status de Conexão -->
+        <div class="connection-status simulating" id="connectionStatus">
+            🔌 Modo Simulação - Conectando ao Arduino...
+        </div>
+
+        <!-- Seção de Monitoramento -->
+        <div class="monitoring-section" id="monitoringSection">
+            <div class="metrics">
+                <div class="metric-card">
+                    <h3>Frequência Cardíaca</h3>
+                    <div class="metric-value" id="bpmValue">--</div>
+                    <div class="metric-unit">BPM</div>
+                </div>
+                <div class="metric-card">
+                    <h3>Oxigenação</h3>
+                    <div class="metric-value" id="spo2Value">--</div>
+                    <div class="metric-unit">SpO2 %</div>
+                </div>
+            </div>
+
+            <div class="breathing-led" id="breathingLed">
+                <div class="breathing-text" id="breathingText">Preparando...</div>
+            </div>
+
+            <div class="breathing-instruction" id="breathingInstruction">
+                Respire fundo e clique em "Iniciar Respiração" quando estiver pronto
+            </div>
+
+            <button class="btn" id="startBtn" onclick="startBreathing()">
+                Iniciar Respiração Guiada
+            </button>
+
+            <button class="btn" id="calmBtn" onclick="showForm()" style="display: none;">
+                Estou mais calmo(a) - Preencher Relatório
+            </button>
+        </div>
+
+        <!-- Seção do Formulário -->
+        <div class="form-section" id="formSection">
+            <h2>Como você está se sentindo?</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">
+                Suas respostas ajudarão sua terapeuta a te compreender melhor 💙
+            </p>
+
+            <form id="calmForm" onsubmit="submitForm(event)">
+                <div class="form-group">
+                    <label for="moment">📍 Qual foi o momento/ocasião?</label>
+                    <input type="text" id="moment" placeholder="Ex: Durante uma reunião de trabalho, antes de dormir..." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="trigger">💭 O que causou ou desencadeou esse momento?</label>
+                    <textarea id="trigger" placeholder="Descreva o que estava acontecendo ou pensando..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>🫁 Você conseguiu fazer a respiração guiada?</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="yes" name="breathing" value="sim" required>
+                            <label for="yes">Sim</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="no" name="breathing" value="nao" required>
+                            <label for="no">Não</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="partial" name="breathing" value="parcialmente" required>
+                            <label for="partial">Parcialmente</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" id="helpedGroup" style="display: none;">
+                    <label for="helped">🤝 Caso não tenha conseguido, o que te ajudou?</label>
+                    <textarea id="helped" placeholder="Ex: Conversar com alguém, ouvir música, caminhar..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="feeling">💚 Como você está se sentindo agora?</label>
+                    <select id="feeling" required>
+                        <option value="">Selecione...</option>
+                        <option value="muito-calmo">Muito calmo(a)</option>
+                        <option value="calmo">Calmo(a)</option>
+                        <option value="um-pouco-melhor">Um pouco melhor</option>
+                        <option value="igual">Igual</option>
+                        <option value="ainda-ansioso">Ainda ansioso(a)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">💌 Mensagem para sua terapeuta (opcional)</label>
+                    <textarea id="message" placeholder="Algo que gostaria de compartilhar na próxima consulta..."></textarea>
+                </div>
+
+                <button type="submit" class="btn" style="width: 100%;">
+                    Enviar para minha Terapeuta
+                </button>
+            </form>
+        </div>
+
+        <!-- Mensagem de Sucesso -->
+        <div class="success-message" id="successMessage">
+            <div class="success-icon">✨</div>
+            <h2>Relatório Enviado com Sucesso!</h2>
+            <p>
+                Suas informações foram enviadas para sua terapeuta. 
+                Ela poderá revisar antes da próxima consulta e te ajudar ainda melhor. 💙
+            </p>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #999;">
+                Lembre-se: você não está sozinho(a). Cada momento de autocuidado é um passo importante.
+            </p>
+            <button class="btn" onclick="resetApp()" style="margin-top: 30px;">
+                Voltar ao Início
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis de estado
+        let bpm = 90;
+        let spo2 = 97;
+        let breathingInterval;
+        let metricsInterval;
+        let currentPhase = '';
+        let isBreathing = false;
+        let calmDetected = false;
+
+        // Simulação de conexão com Arduino
+        setTimeout(() => {
+            document.getElementById('connectionStatus').className = 'connection-status simulating';
+            document.getElementById('connectionStatus').textContent = '🔌 Modo Simulação - Monitorando dados simulados';
+            startMetricsSimulation();
+        }, 2000);
+
+        // Simulação de métricas fisiológicas
+        function startMetricsSimulation() {
+            metricsInterval = setInterval(() => {
+                // Simula variação de BPM (começa alto e diminui com respiração)
+                if (isBreathing && bpm > 70) {
+                    bpm -= Math.random() * 2;
+                } else if (!isBreathing && bpm < 95) {
+                    bpm += Math.random() * 1;
+                }
+                
+                // Simula SpO2 (geralmente estável)
+                spo2 = 97 + Math.random() * 2;
+                
+                document.getElementById('bpmValue').textContent = Math.round(bpm);
+                document.getElementById('spo2Value').textContent = spo2.toFixed(1);
+                
+                // Detecta quando a pessoa está calma
+                if (bpm < 75 && isBreathing && !calmDetected) {
+                    calmDetected = true;
+                    document.getElementById('calmBtn').style.display = 'block';
+                    document.getElementById('breathingInstruction').textContent = 
+                        'Ótimo! Seus batimentos estão diminuindo. Quando se sentir pronto(a), clique abaixo.';
+                }
+            }, 1000);
+        }
+
+        // Ciclo de respiração 4-7-8
+        function startBreathing() {
+            isBreathing = true;
+            calmDetected = false;
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('breathingInstruction').textContent = 
+                'Siga o ritmo do LED: inspire, segure, expire';
+            
+            runBreathingCycle();
+            breathingInterval = setInterval(runBreathingCycle, 19000); // 4+7+8 = 19 segundos
+        }
+
+        function runBreathingCycle() {
+            const led = document.getElementById('breathingLed');
+            const text = document.getElementById('breathingText');
+            
+            // Inspire (4 segundos)
+            led.className = 'breathing-led inhale';
+            text.textContent = 'Inspire...';
+            currentPhase = 'inhale';
+            
+            setTimeout(() => {
+                // Segure (7 segundos)
+                led.className = 'breathing-led hold';
+                text.textContent = 'Segure...';
+                currentPhase = 'hold';
+                
+                setTimeout(() => {
+                    // Expire (8 segundos)
+                    led.className = 'breathing-led exhale';
+                    text.textContent = 'Expire...';
+                    currentPhase = 'exhale';
+                }, 7000);
+            }, 4000);
+        }
+
+        // Mostrar formulário
+        function showForm() {
+            clearInterval(breathingInterval);
+            isBreathing = false;
+            document.getElementById('monitoringSection').style.display = 'none';
+            document.getElementById('formSection').style.display = 'block';
+        }
+
+        // Mostrar campo "o que ajudou" quando selecionar "Não"
+        document.querySelectorAll('input[name="breathing"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const helpedGroup = document.getElementById('helpedGroup');
+                if (this.value === 'nao') {
+                    helpedGroup.style.display = 'block';
+                } else {
+                    helpedGroup.style.display = 'none';
+                }
+            });
+        });
+
+        // Submeter formulário
+        function submitForm(event) {
+            event.preventDefault();
+            
+            // Coleta dados do formulário
+            const formData = {
+                moment: document.getElementById('moment').value,
+                trigger: document.getElementById('trigger').value,
+                breathing: document.querySelector('input[name="breathing"]:checked').value,
+                helped: document.getElementById('helped').value,
+                feeling: document.getElementById('feeling').value,
+                message: document.getElementById('message').value,
+                bpm: Math.round(bpm),
+                spo2: spo2.toFixed(1),
+                timestamp: new Date().toISOString()
+            };
+            
+            // Simula envio para terapeuta (em produção, enviaria para backend)
+            console.log('Dados enviados para terapeuta:', formData);
+            
+            // Mostra mensagem de sucesso
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+            
+            // Aqui você integraria com seu backend real
+            // fetch('/api/send-to-therapist', { method: 'POST', body: JSON.stringify(formData) })
+        }
+
+        // Resetar aplicativo
+        function resetApp() {
+            bpm = 90;
+            spo2 = 97;
+            isBreathing = false;
+            calmDetected = false;
+            
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('monitoringSection').style.display = 'flex';
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('calmBtn').style.display = 'none';
+            document.getElementById('breathingText').textContent = 'Preparando...';
+            document.getElementById('breathingInstruction').textContent = 
+                'Respire fundo e clique em "Iniciar Respiração" quando estiver pronto';
+            document.getElementById('calmForm').reset();
+            document.getElementById('helpedGroup').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
